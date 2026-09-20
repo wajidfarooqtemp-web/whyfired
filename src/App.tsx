@@ -17,22 +17,27 @@ function App() {
       <ComingSoonSection
         id="rights"
         title="Know your rights"
-        note="A plain-language explainer on Indian labour law for BPO workers — what a fair dismissal process looks like, and what to do if yours skipped steps."
+        note="A plain-language explainer on Indian labour law; what a fair dismissal process looks like, and what to do if yours skipped steps."
       />
       <ComingSoonSection
         id="stories"
         title="Stories"
-        note="Anonymous, verified patterns from other cases — shown once there are enough of them to protect anyone's identity."
+        note="Anonymous, verified patterns from other cases; shown once there are enough of them to protect anyone's identity."
       />
       <ComingSoonSection
         id="how-it-works"
         title="How it works"
-        note="Answer a short set of questions, get an instant, honest read on your situation, and see clear next steps — SAMADHAN, your state labour commissioner, and more."
+        note="Answer a short set of questions, get an instant, honest read on your situation, and see clear next steps; SAMADHAN, your state labour commissioner, and more."
       />
       <ComingSoonSection
         id="contact"
         title="Contact"
         note="A way to reach the team will go here."
+      />
+      <ComingSoonSection
+        id="donate"
+        title="Donate"
+        note="Server costs will be covered through Razorpay and PayPal once this is wired up. This is not a registered nonprofit; donations go toward keeping the site running."
       />
     </div>
   );
