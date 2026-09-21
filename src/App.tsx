@@ -16,7 +16,7 @@ function App() {
       />
       <ComingSoonSection
         id="rights"
-        title="Know your rights"
+        title="Know your rights (India)"
         note="A plain-language explainer on Indian labour law; what a fair dismissal process looks like, and what to do if yours skipped steps."
       />
       <ComingSoonSection
@@ -35,9 +35,9 @@ function App() {
         note="A way to reach the team will go here."
       />
       <ComingSoonSection
-        id="donate"
-        title="Donate"
-        note="Server costs will be covered through Razorpay and PayPal once this is wired up. This is not a registered nonprofit; donations go toward keeping the site running."
+       id="support"
+       title="Support"
+       note="Server costs will be covered through Razorpay and PayPal once this is wired up. This is not a registered nonprofit; donations go toward keeping the site running."
       />
     </div>
   );

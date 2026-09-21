@@ -7,6 +7,11 @@ const NAV_LINKS = [
   { label: "Contact", href: "#contact" },
 ];
 
+const LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy.html" },
+  { label: "Terms of Use", href: "/terms.html" },
+];
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
@@ -47,14 +52,14 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right-side cluster: donate, primary CTA, secondary menu, mobile hamburger */}
+          {/* Right-side cluster: support, primary CTA, secondary menu, mobile hamburger */}
           <div className="flex items-center gap-3">
-            {/* Donate: intentionally quiet, never competing with the main CTA */}
+            {/* Support: quiet outlined button, never competing with the main CTA */}
             <a
-              href="#donate"
-              className="hidden md:inline-flex items-center rounded-full border border-white/20 text-cream-100/80 text-sm px-4 py-2 hover:text-cream-50 hover:border-white/40 transition-colors"
+              href="#support"
+              className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2 hover:text-cream-50 hover:border-white/40 transition-colors"
             >
-              Donate
+              <span aria-hidden="true">&#9829;</span> Support
             </a>
 
             {/* CTA (desktop) */}
@@ -65,9 +70,9 @@ export default function Navbar() {
               Share your case
             </a>
 
-            {/* Secondary pages menu (Privacy, Terms); kept separate so the
-                main nav above stays focused on the product itself */}
-            <div className="relative">
+            {/* Secondary pages menu (Privacy, Terms); desktop only, since on
+                mobile these links live inside the single hamburger menu below */}
+            <div className="relative hidden md:block">
               <button
                 type="button"
                 aria-label={legalOpen ? "Close menu" : "More"}
@@ -82,25 +87,21 @@ export default function Navbar() {
 
               {legalOpen && (
                 <div className="absolute right-0 top-11 min-w-[10rem] rounded-xl border border-white/10 bg-brand-950 shadow-lg py-2">
-                  <a
-                    href="/privacy.html"
-                    className="block px-4 py-2 text-sm text-cream-100/80 hover:text-cream-50"
-                    onClick={() => setLegalOpen(false)}
-                  >
-                    Privacy Policy
-                  </a>
-                  <a
-                    href="/terms.html"
-                    className="block px-4 py-2 text-sm text-cream-100/80 hover:text-cream-50"
-                    onClick={() => setLegalOpen(false)}
-                  >
-                    Terms of Use
-                  </a>
+                  {LEGAL_LINKS.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className="block px-4 py-2 text-sm text-cream-100/80 hover:text-cream-50"
+                      onClick={() => setLegalOpen(false)}
+                    >
+                      {link.label}
+                    </a>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Hamburger (mobile) */}
+            {/* Hamburger (mobile): the one and only mobile menu trigger */}
             <button
               type="button"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -128,7 +129,8 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* Full-screen mobile overlay menu */}
+      {/* Full-screen mobile overlay menu: everything lives here on mobile,
+          including the legal links, so there is only ever one menu icon */}
       <div
         className={`fixed inset-0 z-40 bg-brand-950 md:hidden transition-opacity duration-300 ${
           menuOpen
@@ -136,7 +138,7 @@ export default function Navbar() {
             : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex flex-col items-center justify-center h-full gap-8">
+        <div className="flex flex-col items-center justify-center h-full gap-7">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
@@ -150,17 +152,30 @@ export default function Navbar() {
           <a
             href="#share"
             onClick={handleLinkClick}
-            className="mt-4 inline-flex items-center rounded-full bg-cream-50 text-brand-900 font-medium px-7 py-3"
+            className="mt-3 inline-flex items-center rounded-full bg-cream-50 text-brand-900 font-medium px-7 py-3"
           >
             Share your case
           </a>
           <a
-            href="#donate"
+            href="#support"
             onClick={handleLinkClick}
-            className="text-sm text-cream-100/60"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2"
           >
-            Donate
+            <span aria-hidden="true">&#9829;</span> Support
           </a>
+
+          <div className="mt-6 flex items-center gap-6 border-t border-white/10 pt-6">
+            {LEGAL_LINKS.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={handleLinkClick}
+                className="text-xs text-cream-100/50"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </>
