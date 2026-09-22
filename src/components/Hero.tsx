@@ -15,6 +15,7 @@ export default function Hero() {
   const { displayed, done } = useTypewriter(TYPED_LINE, 35, 500);
   const [pillsVisible, setPillsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const badgeTwo = useTypewriter("Your identity stays yours.", 40, 2600);
 
   useEffect(() => {
     if (done) {
@@ -63,6 +64,12 @@ export default function Hero() {
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-transparent to-brand-950/30" />
+            <div className="absolute rounded-full border border-white/10 bg-white/10 backdrop-blur-md px-4 py-2" style={{ right: "8%", top: "87%" }}>
+        <p className="text-[11px] text-cream-100/70 tracking-wide whitespace-nowrap min-w-[7em]">
+          {badgeTwo.displayed}
+          <span className="inline-block w-[1px] h-[1em] bg-cream-100/70 ml-0.5 align-middle animate-pulse" aria-hidden="true" />
+        </p>
+      </div>
 
       {/* Text content */}
       <div className="relative z-10 w-full mx-auto px-5 sm:px-8 max-w-7xl md:max-w-5xl lg:max-w-4xl">

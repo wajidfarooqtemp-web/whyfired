@@ -11,6 +11,7 @@ import { supabase } from "./supabase";
 interface Profile {
   id: string;
   display_name: string;
+  is_admin: boolean;
 }
 
 interface AuthContextValue {
@@ -31,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadProfile(userId: string) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, display_name")
+      .select("id, display_name, is_admin")
       .eq("id", userId)
       .maybeSingle();
     setProfile(data ?? null);

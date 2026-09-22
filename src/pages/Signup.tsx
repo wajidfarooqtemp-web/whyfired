@@ -44,12 +44,6 @@ export default function Signup() {
     }
   }
 
-  async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}${from}` },
-    });
-  }
 
   if (checkEmail) {
     return (
@@ -72,13 +66,7 @@ export default function Signup() {
           Use any name you like; it's what others will see, never your real one.
         </p>
 
-        <button
-          type="button"
-          onClick={handleGoogle}
-          className="w-full rounded-lg border border-white/20 text-cream-50 text-sm py-2.5 mb-4 hover:border-white/40 transition-colors"
-        >
-          Continue with Google
-        </button>
+        <GoogleButton />
 
         <div className="flex items-center gap-3 mb-4">
           <div className="h-px flex-1 bg-white/10" />

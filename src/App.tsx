@@ -8,6 +8,8 @@ import Onboarding from "./pages/Onboarding";
 import ShareCase from "./pages/ShareCase";
 import Stories from "./pages/Stories";
 import CaseDetail from "./pages/CaseDetail";
+import Admin from "./pages/Admin";
+import AdminRoute from "./components/AdminRoute";
 
 function App() {
   return (
@@ -40,6 +42,14 @@ function App() {
             <ProtectedRoute>
               <CaseDetail />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
           }
         />
       </Routes>

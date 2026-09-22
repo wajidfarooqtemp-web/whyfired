@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import GoogleButton from "../components/GoogleButton";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -24,12 +25,6 @@ export default function Login() {
     navigate(from, { replace: true });
   }
 
-  async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}${from}` },
-    });
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 pt-16">
@@ -39,13 +34,7 @@ export default function Login() {
           Your case stays private until you choose to share it.
         </p>
 
-        <button
-          type="button"
-          onClick={handleGoogle}
-          className="w-full rounded-lg border border-white/20 text-cream-50 text-sm py-2.5 mb-4 hover:border-white/40 transition-colors"
-        >
-          Continue with Google
-        </button>
+         <GoogleButton />
 
         <div className="flex items-center gap-3 mb-4">
           <div className="h-px flex-1 bg-white/10" />
