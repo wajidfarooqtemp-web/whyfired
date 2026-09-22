@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../lib/AuthContext";
 
 const NAV_LINKS = [
-  { label: "Share", href: "#share" },
-  { label: "Rights", href: "#rights" },
-  { label: "Stories", href: "#stories" },
-  { label: "Contact", href: "#contact" },
+  { label: "Rights", href: "/#rights" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 const LEGAL_LINKS = [
@@ -15,6 +15,7 @@ const LEGAL_LINKS = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
+  const { session, profile, signOut } = useAuth();
 
   // Prevent background scroll when the mobile menu is open
   useEffect(() => {
@@ -31,16 +32,22 @@ export default function Navbar() {
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-brand-950/60 border-b border-white/10">
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-5 sm:px-8 h-16">
           {/* Logo */}
-          <a
-            href="#top"
+          <Link
+            to="/"
             className="flex items-center gap-2 font-display text-lg sm:text-xl tracking-tight text-cream-50"
           >
             <img src="/logo-mark.png" alt="" className="h-7 w-7" />
             Why Fired
-          </a>
+          </Link>
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-9">
+            <Link to="/share" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              Share
+            </Link>
+                        <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              Stories
+            </Link>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -52,23 +59,44 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right-side cluster: support, primary CTA, secondary menu, mobile hamburger */}
+          {/* Right-side cluster: account, support, primary CTA, secondary menu, mobile hamburger */}
           <div className="flex items-center gap-3">
+            {/* Account: quiet, plain text either way */}
+            {session ? (
+              <div className="hidden md:flex items-center gap-3">
+                <span className="text-sm text-cream-100/60">{profile?.display_name}</span>
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="text-sm text-cream-100/60 hover:text-cream-50 transition-colors"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden md:inline-flex text-sm text-cream-100/70 hover:text-cream-50 transition-colors"
+              >
+                Log in
+              </Link>
+            )}
+
             {/* Support: quiet outlined button, never competing with the main CTA */}
             <a
-              href="#support"
+              href="/#support"
               className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2 hover:text-cream-50 hover:border-white/40 transition-colors"
             >
               <span aria-hidden="true">&#9829;</span> Support
             </a>
 
             {/* CTA (desktop) */}
-            <a
-              href="#share"
+            <Link
+              to="/share"
               className="hidden md:inline-flex items-center rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2.5 hover:bg-white transition-colors"
             >
               Share your case
-            </a>
+            </Link>
 
             {/* Secondary pages menu (Privacy, Terms); desktop only, since on
                 mobile these links live inside the single hamburger menu below */}
@@ -139,6 +167,12 @@ export default function Navbar() {
         }`}
       >
         <div className="flex flex-col items-center justify-center h-full gap-7">
+          <Link to="/share" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Share
+          </Link>
+                      <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              Stories
+            </Link>
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
@@ -149,22 +183,42 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
-          <a
-            href="#share"
+          <Link
+            to="/share"
             onClick={handleLinkClick}
             className="mt-3 inline-flex items-center rounded-full bg-cream-50 text-brand-900 font-medium px-7 py-3"
           >
             Share your case
-          </a>
+          </Link>
           <a
-            href="#support"
+            href="/#support"
             onClick={handleLinkClick}
             className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2"
           >
             <span aria-hidden="true">&#9829;</span> Support
           </a>
 
-          <div className="mt-6 flex items-center gap-6 border-t border-white/10 pt-6">
+          {session ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-cream-100/60">{profile?.display_name}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  signOut();
+                  handleLinkClick();
+                }}
+                className="text-sm text-cream-100/60"
+              >
+                Log out
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" onClick={handleLinkClick} className="text-sm text-cream-100/70">
+              Log in
+            </Link>
+          )}
+
+          <div className="mt-2 flex items-center gap-6 border-t border-white/10 pt-6">
             {LEGAL_LINKS.map((link) => (
               <a
                 key={link.href}

@@ -1,44 +1,48 @@
+import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import ComingSoonSection from "./components/ComingSoonSection";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Onboarding from "./pages/Onboarding";
+import ShareCase from "./pages/ShareCase";
+import Stories from "./pages/Stories";
+import CaseDetail from "./pages/CaseDetail";
 
 function App() {
   return (
     <div className="bg-brand-950 min-h-screen">
       <Navbar />
-      <Hero />
-
-      {/* Placeholder sections — real content comes in the next stage */}
-      <ComingSoonSection
-        id="share"
-        title="Share your case"
-        note="The private questionnaire lives here once we build it. Nothing you enter will ever be linked to your name or your employer's name in public data."
-      />
-      <ComingSoonSection
-        id="rights"
-        title="Know your rights (India)"
-        note="A plain-language explainer on Indian labour law; what a fair dismissal process looks like, and what to do if yours skipped steps."
-      />
-      <ComingSoonSection
-        id="stories"
-        title="Stories"
-        note="Anonymous, verified patterns from other cases; shown once there are enough of them to protect anyone's identity."
-      />
-      <ComingSoonSection
-        id="how-it-works"
-        title="How it works"
-        note="Answer a short set of questions, get an instant, honest read on your situation, and see clear next steps; SAMADHAN, your state labour commissioner, and more."
-      />
-      <ComingSoonSection
-        id="contact"
-        title="Contact"
-        note="A way to reach the team will go here."
-      />
-      <ComingSoonSection
-       id="support"
-       title="Support"
-       note="Server costs will be covered through Razorpay and PayPal once this is wired up. This is not a registered nonprofit; donations go toward keeping the site running."
-      />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route
+          path="/share"
+          element={
+            <ProtectedRoute>
+              <ShareCase />
+            </ProtectedRoute>
+          }
+        />
+                <Route
+          path="/stories"
+          element={
+            <ProtectedRoute>
+              <Stories />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stories/:id"
+          element={
+            <ProtectedRoute>
+              <CaseDetail />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </div>
   );
 }

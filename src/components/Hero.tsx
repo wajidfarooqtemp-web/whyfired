@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTypewriter } from "../hooks/useTypewriter";
 
 const PILLS = [
-  { label: "Share your case", href: "#share" },
-  { label: "Know your rights", href: "#rights" },
-  { label: "Read stories", href: "#stories" },
-  { label: "How it works", href: "#how-it-works" },
+  { label: "Share your case", href: "/share", isRoute: true },
+  { label: "Know your rights", href: "#rights", isRoute: false },
+  { label: "Read stories", href: "#stories", isRoute: false },
+  { label: "How it works", href: "#how-it-works", isRoute: false },
 ];
 
 const TYPED_LINE = "Whatever happened, you don't have to figure it out alone.";
@@ -13,7 +14,6 @@ const TYPED_LINE = "Whatever happened, you don't have to figure it out alone.";
 export default function Hero() {
   const { displayed, done } = useTypewriter(TYPED_LINE, 35, 500);
   const [pillsVisible, setPillsVisible] = useState(false);
-  const badgeTwo = useTypewriter("Your identity stays yours.", 40, 2600);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -63,12 +63,6 @@ export default function Hero() {
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-transparent to-brand-950/30" />
-      <div className="absolute rounded-full border border-white/10 bg-white/10 backdrop-blur-md px-4 py-2" style={{ right: "8%", top: "87%" }}>
-  <p className="text-[11px] text-cream-100/70 tracking-wide whitespace-nowrap min-w-[7em]">
-    {badgeTwo.displayed}
-    <span className="inline-block w-[1px] h-[1em] bg-cream-100/70 ml-0.5 align-middle animate-pulse" aria-hidden="true" />
-  </p>
-</div>
 
       {/* Text content */}
       <div className="relative z-10 w-full mx-auto px-5 sm:px-8 max-w-7xl md:max-w-5xl lg:max-w-4xl">
@@ -110,17 +104,18 @@ export default function Hero() {
           >
             {PILLS.map((pill, i) => {
               const isPrimary = i === 0;
-              return (
-                <a
-                  key={pill.href}
-                  href={pill.href}
-                  style={{ transitionDelay: `${i * 90}ms` }}
-                  className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
-                    isPrimary
-                      ? "bg-cream-50 text-brand-900 hover:bg-white"
-                      : "bg-white/5 text-cream-50 border border-white/15 hover:bg-white/10"
-                  }`}
-                >
+              const className = `rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
+                isPrimary
+                  ? "bg-cream-50 text-brand-900 hover:bg-white"
+                  : "bg-white/5 text-cream-50 border border-white/15 hover:bg-white/10"
+              }`;
+              const style = { transitionDelay: `${i * 90}ms` };
+              return pill.isRoute ? (
+                <Link key={pill.href} to={pill.href} style={style} className={className}>
+                  {pill.label}
+                </Link>
+              ) : (
+                <a key={pill.href} href={pill.href} style={style} className={className}>
                   {pill.label}
                 </a>
               );
