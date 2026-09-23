@@ -172,12 +172,12 @@ export default function Navbar() {
           <Link to="/share" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Share
           </Link>
-            <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-              Stories
-            </Link>
-            <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-             Contact
-            </Link>
+          <Link to="/stories" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Stories
+          </Link>
+          <Link to="/contact" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Contact
+          </Link>
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}

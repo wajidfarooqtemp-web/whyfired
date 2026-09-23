@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import Turnstile from "../components/Turnstile";
 import GoogleButton from "../components/GoogleButton";
 
 export default function Signup() {
@@ -9,6 +10,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,7 +30,7 @@ export default function Signup() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: trimmedName } },
+      options: { data: { display_name: trimmedName }, captchaToken: captchaToken ?? undefined },
     });
     setSubmitting(false);
 
@@ -104,9 +106,11 @@ export default function Signup() {
 
           {error && <p className="text-sm text-red-300">{error}</p>}
 
+          <Turnstile onVerify={setCaptchaToken} />
+
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !captchaToken}
             className="w-full rounded-full bg-cream-50 text-brand-900 text-sm font-medium py-2.5 hover:bg-white transition-colors disabled:opacity-60"
           >
             {submitting ? "Creating account..." : "Create account"}

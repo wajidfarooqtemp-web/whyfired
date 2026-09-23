@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import Turnstile from "../components/Turnstile";
 import GoogleButton from "../components/GoogleButton";
 
 export default function Login() {
@@ -8,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/share";
@@ -16,7 +18,11 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken: captchaToken ?? undefined },
+    });
     setSubmitting(false);
     if (error) {
       setError(error.message);
@@ -62,9 +68,11 @@ export default function Login() {
 
           {error && <p className="text-sm text-red-300">{error}</p>}
 
+          <Turnstile onVerify={setCaptchaToken} />
+
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !captchaToken}
             className="w-full rounded-full bg-cream-50 text-brand-900 text-sm font-medium py-2.5 hover:bg-white transition-colors disabled:opacity-60"
           >
             {submitting ? "Logging in..." : "Log in"}
