@@ -1,10 +1,12 @@
 import Hero from "../components/Hero";
 import ComingSoonSection from "../components/ComingSoonSection";
+import FeaturedCases from "../components/FeaturedCases";
 
 export default function Home() {
   return (
     <>
       <Hero />
+      <FeaturedCases />
 
       {/* Placeholder sections; real content comes in as each stage is built */}
       <ComingSoonSection
