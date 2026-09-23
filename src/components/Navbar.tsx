@@ -4,7 +4,6 @@ import { useAuth } from "../lib/AuthContext";
 
 const NAV_LINKS = [
   { label: "Rights", href: "/#rights" },
-  { label: "Contact", href: "/#contact" },
 ];
 
 const LEGAL_LINKS = [
@@ -45,9 +44,12 @@ export default function Navbar() {
             <Link to="/share" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Share
             </Link>
-                        <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+           <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Stories
-            </Link>
+           </Link>
+           <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              Contact
+           </Link>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -170,8 +172,11 @@ export default function Navbar() {
           <Link to="/share" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Share
           </Link>
-                      <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+            <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Stories
+            </Link>
+            <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+             Contact
             </Link>
           {NAV_LINKS.map((link) => (
             <a

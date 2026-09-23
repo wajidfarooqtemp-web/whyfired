@@ -18,11 +18,6 @@ export default function Home() {
         note="Answer a short set of questions, get an instant, honest read on your situation, and see clear next steps; SAMADHAN, your state labour commissioner, and more."
       />
       <ComingSoonSection
-        id="contact"
-        title="Contact"
-        note="A way to reach the team will go here."
-      />
-      <ComingSoonSection
         id="support"
         title="Support"
         note="Server costs will be covered through Razorpay and PayPal once this is wired up. This is not a registered nonprofit; donations go toward keeping the site running."

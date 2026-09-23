@@ -24,3 +24,11 @@ body {
   color: var(--color-cream-50);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Native dropdown option lists render with a browser-controlled
+   (usually white) background; without this they'd inherit our
+   cream text color and become unreadable until hovered. */
+select option {
+  color: #1a1a1a;
+  background-color: #fbf7f2;
+}

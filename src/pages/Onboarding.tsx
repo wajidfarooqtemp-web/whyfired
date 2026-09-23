@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -8,13 +8,42 @@ export default function Onboarding() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/share";
 
+  useEffect(() => {
+    if (!session) return;
+    supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (data) {
+          // A profile already exists (most likely created automatically
+          // at signup); nothing to ask, just move on.
+          await refreshProfile();
+          navigate(from, { replace: true });
+        } else {
+          setChecking(false);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
   if (!session) {
     navigate("/login", { replace: true });
     return null;
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-cream-100/60 text-sm">
+        Loading...
+      </div>
+    );
   }
 
   async function handleSubmit(e: FormEvent) {

@@ -9,6 +9,7 @@ import ShareCase from "./pages/ShareCase";
 import Stories from "./pages/Stories";
 import CaseDetail from "./pages/CaseDetail";
 import Admin from "./pages/Admin";
+import Contact from "./pages/Contact";
 import AdminRoute from "./components/AdminRoute";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/onboarding" element={<Onboarding />} />
