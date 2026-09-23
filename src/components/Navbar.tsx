@@ -50,6 +50,9 @@ export default function Navbar() {
            <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Contact
            </Link>
+           <Link to="/patterns" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+             Patterns
+           </Link>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -177,6 +180,9 @@ export default function Navbar() {
           </Link>
           <Link to="/contact" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Contact
+          </Link>
+          <Link to="/patterns" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Patterns
           </Link>
           {NAV_LINKS.map((link) => (
             <a
