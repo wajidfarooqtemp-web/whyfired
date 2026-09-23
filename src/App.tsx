@@ -16,6 +16,7 @@ const Stories = lazy(() => import("./pages/Stories"));
 const CaseDetail = lazy(() => import("./pages/CaseDetail"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Contact = lazy(() => import("./pages/Contact"));
+const Patterns = lazy(() => import("./pages/Patterns"));
 
 function PageLoading() {
   return (
@@ -33,6 +34,14 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/patterns"
+            element={
+              <ProtectedRoute>
+                <Patterns />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
