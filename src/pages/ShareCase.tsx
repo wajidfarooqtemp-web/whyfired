@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
+import { assessTermination, type TerminationReason } from "../lib/assessment";
 
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia",
@@ -72,6 +73,18 @@ export default function ShareCase() {
     [storyText]
   );
 
+  const toTriBool = (v: string) => (v === "" ? null : v === "true");
+
+  const assessment = useMemo(() => {
+    if (!terminationReason) return null;
+    return assessTermination({
+      terminationReason: terminationReason as TerminationReason,
+      gotNoticeOrSeverance: toTriBool(gotNotice),
+      gotChargeSheet: toTriBool(gotChargeSheet),
+      hadEnquiryMeeting: toTriBool(hadEnquiry),
+    });
+  }, [terminationReason, gotNotice, gotChargeSheet, hadEnquiry]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -122,20 +135,94 @@ export default function ShareCase() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-5 pt-16">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 text-center">
-          <h1 className="font-display text-2xl text-cream-50 mb-2">Your case is in</h1>
-          <p className="text-cream-100/60 text-sm mb-6">
-            It's pending review before it appears publicly. That review only
-            decides whether it counts toward pattern data and shows up in
-            Stories; it never blocks you from anything else on the site.
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            className="rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2.5 hover:bg-white transition-colors"
-          >
-            Back to home
-          </button>
+      <div className="min-h-screen flex items-center justify-center px-5 pt-16 pb-16">
+        <div className="w-full max-w-md space-y-4">
+          {assessment && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7">
+              <p className="text-xs uppercase tracking-wide text-cream-100/40 mb-2">
+                Your rights, in plain language
+              </p>
+
+              <h2 className="font-display text-xl text-cream-50 mb-3">
+                {assessment.headline}
+              </h2>
+
+              <ul className="space-y-2 mb-5">
+                {assessment.reasons.map((reason: string, i: number) => (
+                  <li
+                    key={i}
+                    className="text-sm text-cream-100/75 leading-relaxed"
+                  >
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-xs uppercase tracking-wide text-cream-100/40 mb-2">
+                What you can do next
+              </p>
+
+              <div className="space-y-3 mb-5">
+                {assessment.nextSteps.map(
+                  (
+                    step: {
+                      title: string;
+                      body: string;
+                      href?: string;
+                    },
+                    i: number
+                  ) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border border-white/10 p-3"
+                    >
+                      {step.href ? (
+                        <a
+                          href={step.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-cream-50 underline"
+                        >
+                          {step.title}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-medium text-cream-50">
+                          {step.title}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-cream-100/60 mt-1">
+                        {step.body}
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+
+              <p className="text-xs text-cream-100/40 leading-relaxed">
+                {assessment.disclaimer}
+              </p>
+            </div>
+          )}
+
+          <div className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 text-center">
+            <h1 className="font-display text-2xl text-cream-50 mb-2">
+              Your case is in
+            </h1>
+
+            <p className="text-cream-100/60 text-sm mb-6">
+              It's pending review before it appears publicly. That review only
+              decides whether it counts toward pattern data and shows up in
+              Stories; it never blocks you from anything else on the site.
+            </p>
+
+            <button
+              onClick={() => navigate("/")}
+              className="rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2.5 hover:bg-white transition-colors"
+            >
+              Back to home
+            </button>
+          </div>
         </div>
       </div>
     );
