@@ -48,17 +48,29 @@ export default function Admin() {
     if (!categoryId) return;
 
     setBusyId(id);
+    const { data: userData } = await supabase.auth.getUser();
     await supabase
       .from("cases")
       .update({ status: "approved", category_id: categoryId, approved_at: new Date().toISOString() })
       .eq("id", id);
+    if (userData.user) {
+      await supabase
+        .from("admin_actions")
+        .insert({ case_id: id, admin_id: userData.user.id, action: "approved" });
+    }
     setBusyId(null);
     setPending((prev) => prev.filter((c) => c.id !== id));
   }
 
   async function reject(id: string) {
     setBusyId(id);
+    const { data: userData } = await supabase.auth.getUser();
     await supabase.from("cases").update({ status: "rejected" }).eq("id", id);
+    if (userData.user) {
+      await supabase
+        .from("admin_actions")
+        .insert({ case_id: id, admin_id: userData.user.id, action: "rejected" });
+    }
     setBusyId(null);
     setPending((prev) => prev.filter((c) => c.id !== id));
   }
