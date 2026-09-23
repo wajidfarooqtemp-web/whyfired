@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import GoogleButton from "../components/GoogleButton";
 
 export default function Signup() {
   const [displayName, setDisplayName] = useState("");
