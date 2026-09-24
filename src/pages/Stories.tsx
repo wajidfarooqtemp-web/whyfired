@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { terminationReasonLabel } from "../lib/constants";
+import StoryCard from "../components/StoryCard";
 
 const PAGE_SIZE = 3;
 
@@ -107,26 +106,7 @@ export default function Stories() {
         ) : (
           <div className="space-y-4">
             {cases.map((c) => (
-              <Link
-                key={c.id}
-                to={`/stories/${c.id}`}
-                className="block rounded-2xl border border-white/10 bg-white/5 hover:bg-white/[0.07] transition-colors p-5"
-              >
-                <div className="flex items-center gap-2 text-xs text-cream-100/50 mb-2">
-                  <span>{c.country}</span>
-                  <span>&middot;</span>
-                  <span>{terminationReasonLabel(c.termination_reason)}</span>
-                  {c.category && (
-                    <>
-                      <span>&middot;</span>
-                      <span className="text-cream-100/70">{c.category.name}</span>
-                    </>
-                  )}
-                </div>
-                <p className="text-cream-50 text-sm leading-relaxed">
-                  {c.story_text.length > 220 ? c.story_text.slice(0, 220) + "..." : c.story_text}
-                </p>
-              </Link>
+              <StoryCard key={c.id} c={c} />
             ))}
           </div>
         )}
