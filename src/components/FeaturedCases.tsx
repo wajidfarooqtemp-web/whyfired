@@ -46,7 +46,7 @@ export default function FeaturedCases() {
             Some of what people have shared
           </h2>
           <p className="text-cream-100/60 text-sm leading-relaxed">
-            These are real cases, reviewed before appearing here. No names, no employers — just
+            These are real cases, reviewed before appearing here. No names, no employers; just
             what happened. Log in to read the full story, join the conversation, or share your own.
           </p>
         </div>
