@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { terminationReasonLabel } from "../lib/constants";
+import { useAuth } from "../lib/AuthContext";
 
 interface Category {
   id: string;
@@ -26,6 +28,7 @@ interface ApprovedCase {
 }
 
 export default function Admin() {
+  const { profile } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [pending, setPending] = useState<PendingCase[]>([]);
   const [approved, setApproved] = useState<ApprovedCase[]>([]);
@@ -111,7 +114,20 @@ export default function Admin() {
   return (
     <div className="min-h-screen px-5 pt-24 pb-16">
       <div className="max-w-2xl mx-auto">
-        <h1 className="font-display text-2xl text-cream-50 mb-1">Review queue</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
+          <h1 className="font-display text-2xl text-cream-50">Review queue</h1>
+          <div className="flex items-center gap-4 text-sm">
+            <Link to="/admin/users" className="text-cream-100/60 hover:text-cream-50">
+              Users
+            </Link>
+            <Link to="/admin/analytics" className="text-cream-100/60 hover:text-cream-50">
+              Analytics
+            </Link>
+          </div>
+        </div>
+        <p className="text-cream-100/40 text-xs mb-1">
+          Signed in as {profile?.display_name ?? "..."} &middot; Admin
+        </p>
         <p className="text-cream-100/60 text-sm mb-8">
           {loading ? "Loading..." : `${pending.length} case${pending.length === 1 ? "" : "s"} waiting`}
         </p>

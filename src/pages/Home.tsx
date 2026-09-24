@@ -2,7 +2,6 @@ import Hero from "../components/Hero";
 import ComingSoonSection from "../components/ComingSoonSection";
 import FeaturedCases from "../components/FeaturedCases";
 import RightsSection from "../components/RightsSection";
-import HowItWorksSection from "../components/HowItWorksSection";
 
 export default function Home() {
   return (
@@ -10,7 +9,6 @@ export default function Home() {
       <Hero />
       <FeaturedCases />
       <RightsSection />
-      <HowItWorksSection />
       <ComingSoonSection
         id="support"
         title="Support"

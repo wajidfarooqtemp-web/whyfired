@@ -59,6 +59,14 @@ function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 interface ValidationError {
   field: string;
   message: string;
@@ -92,6 +100,21 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       return json({ error: "Not authenticated." }, 401);
+    }
+
+    // IP rate limit: on top of the one-active-case-per-user limit,
+    // this stops a script that spins up many different accounts to
+    // get around that. Hashed, never stored raw.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ipHash = await sha256Hex(ip);
+    const { data: allowed } = await supabase.rpc("check_rate_limit", {
+      p_ip_hash: ipHash,
+      p_action: "submit_case",
+      p_max_count: 5,
+      p_window_minutes: 60,
+    });
+    if (allowed === false) {
+      return json({ error: "Too many submissions from this connection. Please try again in a while." }, 429);
     }
 
     const body = await req.json();

@@ -16,7 +16,6 @@ export default function Navbar() {
   const [legalOpen, setLegalOpen] = useState(false);
   const { session, profile, signOut } = useAuth();
 
-  // Prevent background scroll when the mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -30,7 +29,6 @@ export default function Navbar() {
     <>
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-brand-950/60 border-b border-white/10">
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-5 sm:px-8 h-16">
-          {/* Logo */}
           <Link
             to="/"
             className="flex items-center gap-2 font-display text-lg sm:text-xl tracking-tight text-cream-50"
@@ -39,20 +37,25 @@ export default function Navbar() {
             Why Fired
           </Link>
 
-          {/* Desktop links */}
           <div className="hidden md:flex items-center gap-9">
+            <Link to="/" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              Home
+            </Link>
             <Link to="/share" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Share
             </Link>
-           <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+            <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Stories
-           </Link>
-           <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+            </Link>
+            <Link to="/how-it-works" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              How it works
+            </Link>
+            <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Contact
-           </Link>
-           <Link to="/patterns" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-             Patterns
-           </Link>
+            </Link>
+            <Link to="/patterns" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
+              Patterns
+            </Link>
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
@@ -62,18 +65,26 @@ export default function Navbar() {
                 {link.label}
               </a>
             ))}
+            {profile?.is_admin && (
+              <Link to="/admin" className="text-sm text-cream-50 hover:text-white transition-colors">
+                Admin
+              </Link>
+            )}
           </div>
 
-          {/* Right-side cluster: account, support, primary CTA, secondary menu, mobile hamburger */}
           <div className="flex items-center gap-3">
-            {/* Account: quiet, plain text either way */}
             {session ? (
-              <div className="hidden md:flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-2">
                 <span className="text-sm text-cream-100/60">{profile?.display_name}</span>
+                {profile?.is_admin && (
+                  <span className="text-[10px] uppercase tracking-wide rounded-full border border-white/20 px-2 py-0.5 text-cream-100/70">
+                    Admin
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => signOut()}
-                  className="text-sm text-cream-100/60 hover:text-cream-50 transition-colors"
+                  className="ml-1 text-sm text-cream-100/60 hover:text-cream-50 transition-colors"
                 >
                   Log out
                 </button>
@@ -87,7 +98,6 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Support: quiet outlined button, never competing with the main CTA */}
             <a
               href="/#support"
               className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2 hover:text-cream-50 hover:border-white/40 transition-colors"
@@ -95,7 +105,6 @@ export default function Navbar() {
               <span aria-hidden="true">&#9829;</span> Support
             </a>
 
-            {/* CTA (desktop) */}
             <Link
               to="/share"
               className="hidden md:inline-flex items-center rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2.5 hover:bg-white transition-colors"
@@ -103,8 +112,6 @@ export default function Navbar() {
               Share your case
             </Link>
 
-            {/* Secondary pages menu (Privacy, Terms); desktop only, since on
-                mobile these links live inside the single hamburger menu below */}
             <div className="relative hidden md:block">
               <button
                 type="button"
@@ -134,7 +141,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Hamburger (mobile): the one and only mobile menu trigger */}
             <button
               type="button"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -162,21 +168,23 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* Full-screen mobile overlay menu: everything lives here on mobile,
-          including the legal links, so there is only ever one menu icon */}
       <div
-        className={`fixed inset-0 z-40 bg-brand-950 md:hidden transition-opacity duration-300 ${
-          menuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+        className={`fixed inset-0 z-40 bg-brand-950 md:hidden transition-opacity duration-300 overflow-y-auto ${
+          menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex flex-col items-center justify-center h-full gap-7">
+        <div className="flex flex-col items-center justify-center min-h-full gap-6 py-16">
+          <Link to="/" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Home
+          </Link>
           <Link to="/share" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Share
           </Link>
           <Link to="/stories" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Stories
+          </Link>
+          <Link to="/how-it-works" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            How it works
           </Link>
           <Link to="/contact" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Contact
@@ -194,6 +202,12 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          {profile?.is_admin && (
+            <Link to="/admin" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+              Admin
+            </Link>
+          )}
+
           <Link
             to="/share"
             onClick={handleLinkClick}
@@ -210,8 +224,13 @@ export default function Navbar() {
           </a>
 
           {session ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-cream-100/60">{profile?.display_name}</span>
+              {profile?.is_admin && (
+                <span className="text-[10px] uppercase tracking-wide rounded-full border border-white/20 px-2 py-0.5 text-cream-100/70">
+                  Admin
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => {

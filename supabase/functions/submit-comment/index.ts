@@ -11,6 +11,14 @@ function sanitizeText(input: string): string {
     .trim();
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -35,6 +43,22 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       return json({ error: "Not authenticated." }, 401);
+    }
+
+    // IP rate limit, on top of the existing per-user rate limit
+    // (the database trigger that already blocks "commenting too
+    // fast"). This one catches the same abuse spread across several
+    // different accounts instead of just one.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ipHash = await sha256Hex(ip);
+    const { data: allowed } = await supabase.rpc("check_rate_limit", {
+      p_ip_hash: ipHash,
+      p_action: "submit_comment",
+      p_max_count: 15,
+      p_window_minutes: 60,
+    });
+    if (allowed === false) {
+      return json({ error: "Too many comments from this connection. Please slow down." }, 429);
     }
 
     const body = await req.json();
