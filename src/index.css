@@ -12,11 +12,11 @@
   --color-brand-500: #bd2419;
   --color-cream-50: #fbf7f2;
   --color-cream-100: #f2e9df;
-  --color-feed-bg: #e9e2d9;
-  --color-feed-card: #fffdfa;
-  --color-feed-line: #dcd3c7;
+  --color-feed-bg: #f0e0da;
+  --color-feed-card: #fffaf8;
+  --color-feed-line: #e2c8c0;
   --color-ink: #2b1714;
-  --color-ink-soft: #6f5f58;
+  --color-ink-soft: #6b5650;
 }
 
 html {

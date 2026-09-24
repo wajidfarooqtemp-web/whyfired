@@ -57,6 +57,6 @@ export const ArrowDownIcon = (p: IconProps) => (
 export const CommentIcon = (p: IconProps) => (
   <Svg {...p}><path d="M4 5h16v11H9l-5 4z" /></Svg>
 );
-export const OpenIcon = (p: IconProps) => (
-  <Svg {...p}><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></Svg>
+export const TrashIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></Svg>
 );

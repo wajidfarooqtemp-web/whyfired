@@ -44,8 +44,10 @@ export default function FeaturedCases() {
   if (loading || session || !cases || cases.length === 0) return null;
 
   return (
-    <section id="cases" className="bg-feed-bg px-3 sm:px-5 py-14 sm:py-20">
-      <div className="max-w-[640px] mx-auto">
+    <section id="cases" className="relative bg-feed-bg px-3 sm:px-5 pt-24 pb-24">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-brand-950 to-transparent" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-brand-950 to-transparent" />
+      <div className="relative max-w-[640px] mx-auto">
         <div className="mb-5 px-1">
           <h2 className="font-display text-2xl sm:text-3xl text-ink mb-2">Some of what people have shared</h2>
           <p className="text-ink-soft text-sm leading-relaxed">
@@ -56,7 +58,7 @@ export default function FeaturedCases() {
 
         <div className="space-y-2">
           {cases.map((c) => (
-            <article key={c.id} className="rounded-xl border border-feed-line bg-feed-card shadow-sm p-4">
+            <article key={c.id} className="rounded-xl border border-feed-line bg-feed-card shadow-[0_1px_3px_rgba(61,9,6,0.08)] p-4">
               <div className="flex gap-3">
                 <div className="shrink-0 w-12 h-12 rounded-full bg-brand-700 text-cream-50 flex items-center justify-center">
                   <UserIcon size={26} />

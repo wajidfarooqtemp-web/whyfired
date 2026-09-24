@@ -30,7 +30,7 @@ export default function Stories() {
     async (offset: number, replace: boolean) => {
       let query = supabase
         .from("cases")
-        .select("id, country, termination_reason, story_text, created_at, category:categories(name)")
+        .select("id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, category:categories(name)")
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
@@ -67,9 +67,13 @@ export default function Stories() {
     }`;
 
   return (
-    <div className="min-h-screen bg-feed-bg px-3 sm:px-5 pt-24 pb-16">
-      <div className="max-w-[640px] mx-auto">
-        <div className="rounded-xl border border-feed-line bg-feed-card shadow-sm px-4 py-4 mb-2">
+    <div className="relative min-h-screen bg-feed-bg px-3 sm:px-5 pt-24 pb-16">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-brand-950 to-transparent"
+      />
+      <div className="relative max-w-[640px] mx-auto">
+        <div className="rounded-xl border border-feed-line bg-feed-card shadow-[0_1px_3px_rgba(61,9,6,0.08)] px-4 py-4 mb-2">
           <h1 className="font-display text-2xl text-ink mb-1">Stories</h1>
           <p className="text-ink-soft text-sm mb-4">
             Anonymous, approved cases from people who chose to share what happened to them.

@@ -26,6 +26,7 @@ interface PreviewRow {
 export default function FeedList({ cases }: { cases: FeedCase[] }) {
   const [meta, setMeta] = useState<Record<string, FeedMeta>>({});
   const [previews, setPreviews] = useState<Record<string, PreviewComment>>({});
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
   const requested = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -67,15 +68,20 @@ export default function FeedList({ cases }: { cases: FeedCase[] }) {
     setMeta((prev) => ({ ...prev, [id]: { ...(prev[id] ?? EMPTY_META), ...patch } }));
   }
 
+  function handleRemoved(id: string) {
+    setRemoved((prev) => new Set(prev).add(id));
+  }
+
   return (
     <div className="space-y-2">
-      {cases.map((c) => (
+      {cases.filter((c) => !removed.has(c.id)).map((c) => (
         <FeedPost
           key={c.id}
           c={c}
           meta={meta[c.id] ?? EMPTY_META}
           preview={previews[c.id] ?? null}
           onMeta={handleMeta}
+          onRemoved={handleRemoved}
         />
       ))}
     </div>
