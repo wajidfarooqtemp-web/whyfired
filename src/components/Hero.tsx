@@ -3,10 +3,9 @@ import { Link } from "react-router-dom";
 import { useTypewriter } from "../hooks/useTypewriter";
 
 const PILLS = [
-  { label: "Share your case", href: "/share", isRoute: true },
-  { label: "Know your rights", href: "#rights", isRoute: false },
-  { label: "Read stories", href: "#stories", isRoute: false },
-  { label: "How it works", href: "#how-it-works", isRoute: false },
+  { label: "Share your case", to: "/share", route: true },
+  { label: "Know your rights", to: "#rights", route: false },
+  { label: "Read stories", to: "/stories", route: true },
 ];
 
 const TYPED_LINE = "Whatever happened, you don't have to figure it out alone.";
@@ -111,18 +110,18 @@ export default function Hero() {
           >
             {PILLS.map((pill, i) => {
               const isPrimary = i === 0;
-              const className = `rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
+              const cls = `rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
                 isPrimary
                   ? "bg-cream-50 text-brand-900 hover:bg-white"
                   : "bg-white/5 text-cream-50 border border-white/15 hover:bg-white/10"
               }`;
               const style = { transitionDelay: `${i * 90}ms` };
-              return pill.isRoute ? (
-                <Link key={pill.href} to={pill.href} style={style} className={className}>
+              return pill.route ? (
+                <Link key={pill.to} to={pill.to} style={style} className={cls}>
                   {pill.label}
                 </Link>
               ) : (
-                <a key={pill.href} href={pill.href} style={style} className={className}>
+                <a key={pill.to} href={pill.to} style={style} className={cls}>
                   {pill.label}
                 </a>
               );

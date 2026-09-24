@@ -2,64 +2,44 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
-import StoryCard from "../components/StoryCard";
+import FeedList from "./FeedList";
+import type { FeedCase } from "./FeedPost";
 
-interface CaseRow {
-  id: string;
-  role_duties: string;
-  country: string;
-  termination_reason: string;
-  story_text: string;
-  created_at: string;
-  category: { name: string } | null;
-}
-
-// Logged-in visitors only: shows a handful of additional approved
-// cases right on the homepage, past the 3 public featured ones, so
-// there's more to actually browse without a separate trip to
-// /stories first. Renders nothing for logged-out visitors or before
-// there's anything approved yet.
+// Logged-in visitors only: the latest approved stories as a vertical
+// feed right on the homepage, with voting and comments in place.
+// Logged-out visitors see FeaturedCases instead.
 export default function MoreCases() {
   const { session } = useAuth();
-  const [cases, setCases] = useState<CaseRow[] | null>(null);
+  const [cases, setCases] = useState<FeedCase[] | null>(null);
 
   useEffect(() => {
     if (!session) return;
-    let cancelled = false;
 
     async function load() {
       const { data } = await supabase
         .from("cases")
-        .select("id, role_duties, country, termination_reason, story_text, created_at, category:categories(name)")
+        .select("id, country, termination_reason, story_text, created_at, category:categories(name)")
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(6);
-      if (!cancelled) setCases((data as unknown as CaseRow[]) ?? []);
+      setCases((data as unknown as FeedCase[]) ?? []);
     }
 
     load();
-    return () => {
-      cancelled = true;
-    };
   }, [session]);
 
   if (!session || !cases || cases.length === 0) return null;
 
   return (
-    <section className="px-5 py-16 border-t border-white/10">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-end justify-between flex-wrap gap-3 mb-8">
-          <h2 className="font-display text-2xl text-cream-50">More cases</h2>
-          <Link to="/stories" className="text-sm text-cream-50 underline underline-offset-2">
+    <section id="stories" className="bg-feed-bg px-3 sm:px-5 py-14">
+      <div className="max-w-[640px] mx-auto">
+        <div className="flex items-end justify-between flex-wrap gap-3 mb-4 px-1">
+          <h2 className="font-display text-2xl text-ink">Latest stories</h2>
+          <Link to="/stories" className="text-sm text-brand-700 font-medium hover:underline">
             Browse all stories
           </Link>
         </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 items-start">
-          {cases.map((c) => (
-            <StoryCard key={c.id} c={c} />
-          ))}
-        </div>
+        <FeedList cases={cases} />
       </div>
     </section>
   );
