@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { terminationReasonLabel } from "../lib/constants";
 
-// Below this many total approved cases, we show nothing broken down —
-// small numbers can make individual people identifiable even without
-// a name attached. Same idea for the two narrower insight lines
-// further down, gated separately since a subgroup (e.g. layoffs)
-// can be small even when the total isn't.
+// Below this many total approved cases, we show nothing broken down,
+// since small numbers can make individual people identifiable even
+// without a name attached. Same idea for the two narrower insight
+// lines further down, gated separately since a subgroup (e.g.
+// layoffs) can be small even when the total isn't.
 const MIN_TOTAL_CASES = 5;
 const MIN_SUBGROUP_CASES = 3;
 
@@ -84,7 +84,6 @@ export default function Patterns() {
     );
   }
 
-  // Breakdown by termination reason
   const counts = new Map<string, number>();
   for (const c of cases) {
     counts.set(c.termination_reason, (counts.get(c.termination_reason) ?? 0) + 1);
@@ -98,9 +97,6 @@ export default function Patterns() {
     }))
     .sort((a, b) => b.count - a.count);
 
-  // Of cases citing misconduct, how many report no enquiry ever happened —
-  // either because none was held, or one was claimed but the meeting itself
-  // didn't happen.
   const misconductCases = cases.filter(
     (c) => c.termination_reason === "misconduct_no_enquiry" || c.termination_reason === "misconduct_with_enquiry"
   );
@@ -112,7 +108,6 @@ export default function Patterns() {
   const showNoEnquiryStat = misconductCases.length >= MIN_SUBGROUP_CASES;
   const pctNoEnquiry = showNoEnquiryStat ? Math.round((noEnquiryCount / misconductCases.length) * 100) : 0;
 
-  // Of layoff/retrenchment cases, how many report no notice or severance.
   const layoffCases = cases.filter((c) => c.termination_reason === "layoff_retrenchment");
   const noNoticeCount = layoffCases.filter((c) => c.got_notice_or_severance === false).length;
   const showNoNoticeStat = layoffCases.length >= MIN_SUBGROUP_CASES;
@@ -124,7 +119,7 @@ export default function Patterns() {
         <div>
           <h1 className="font-display text-3xl text-cream-50 mb-2">Patterns across cases</h1>
           <p className="text-cream-100/60 text-sm">
-            Built from {total} reviewed {total === 1 ? "case" : "cases"}. No names, no employers —
+            Built from {total} reviewed {total === 1 ? "case" : "cases"}. No names, no employers,
             just what people reported about how their termination was handled.
           </p>
         </div>
@@ -170,7 +165,7 @@ export default function Patterns() {
         <p className="text-xs text-cream-100/40 leading-relaxed">
           These figures reflect only what people chose to share and that were approved after review;
           they're not a scientific survey of BPO terminations in India. They exist to show real,
-          recurring patterns — not to judge any single employer.
+          recurring patterns, not to judge any single employer.
         </p>
       </div>
     </div>

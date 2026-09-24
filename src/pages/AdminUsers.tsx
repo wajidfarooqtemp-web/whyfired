@@ -57,13 +57,13 @@ export default function AdminUsers() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id} className="border-b border-white/5 text-cream-100/80">
-                    <td className="px-4 py-3">{u.email ?? "—"}</td>
+                    <td className="px-4 py-3">{u.email ?? "Not available"}</td>
                     <td className="px-4 py-3">
                       {u.display_name ?? <span className="text-cream-100/40">not set</span>}
                     </td>
                     <td className="px-4 py-3">{new Date(u.signed_up_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3">
-                      {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : "—"}
+                      {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : "Never"}
                     </td>
                     <td className="px-4 py-3">{u.is_admin ? "Yes" : ""}</td>
                   </tr>

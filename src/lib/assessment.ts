@@ -1,5 +1,5 @@
 // Turns a person's answers into a plain-language read on whether the
-// *process* their employer followed looks lawful — never a verdict on
+// *process* their employer followed looks lawful, never a verdict on
 // whether they'd "win," and never a promise. This is deliberately a
 // pure function (no network calls, no database) so it can run
 // instantly in the browser right after someone fills out the form,
@@ -11,7 +11,7 @@
 // notice or pay-in-lieu plus retrenchment compensation for a layoff.
 // The newer Industrial Relations Code, 2020 carries the same core
 // protections forward as it rolls out state by state. None of this
-// is a substitute for advice from SAMADHAN or a labour advocate —
+// is a substitute for advice from SAMADHAN or a labour advocate;
 // this function's own output says so, every time.
 
 export type TerminationReason =
@@ -22,7 +22,7 @@ export type TerminationReason =
   | "forced_resignation";
 
 // Matches how the form actually collects these: a yes/no question
-// that can also be left as "not sure" — which is real, useful
+// that can also be left as "not sure", which is real, useful
 // information (it often means no paperwork was ever given), not
 // missing data to be ignored.
 export type TriBool = boolean | null;
@@ -55,7 +55,7 @@ export interface NextStep {
 }
 
 const DISCLAIMER =
-  "This is a plain-language read on the process your employer followed, based only on what you entered here; not a legal verdict, and not a guarantee of any outcome. For anything formal, use the next steps below or speak with a labour advocate.";
+  "This is a plain-language read on the process your employer followed, based only on what you entered here. Not a legal verdict, and not a guarantee of any outcome. For anything formal, use the next steps below or speak with a labour advocate.";
 
 const SAMADHAN_STEP: NextStep = {
   title: "File with SAMADHAN",
@@ -88,7 +88,7 @@ export function assessTermination(input: AssessmentInput): AssessmentResult {
         headline: "This doesn't look like a lawful dismissal process.",
         reasons: [
           "Indian labour law requires your employer to give a specific, documented reason before ending your job. \"No reason given\" does not meet that standard on its own.",
-          "Without a stated reason, there's usually no charge sheet or formal enquiry either... both of which are also required for a dismissal to hold up.",
+          "Without a stated reason, there's usually no charge sheet or formal enquiry either, both of which are also required for a dismissal to hold up.",
         ],
         nextSteps: [DOCUMENTS_STEP, SAMADHAN_STEP, COMMISSIONER_STEP, NOTICE_TEMPLATE_STEP],
         disclaimer: DISCLAIMER,
@@ -120,7 +120,7 @@ export function assessTermination(input: AssessmentInput): AssessmentResult {
           headline: "On the surface, the required process steps look like they were followed.",
           reasons: [
             "You received a charge sheet and had a formal enquiry meeting, which are the two central procedural requirements for a misconduct-based dismissal.",
-            "That doesn't automatically mean the decision itself was fair or proportionate to whatever you were accused of; just that the paperwork steps were present. Whether the enquiry was conducted fairly (a neutral decision-maker, a genuine chance to respond, evidence actually considered) matters just as much as whether it happened at all.",
+            "That doesn't automatically mean the decision itself was fair or proportionate to whatever you were accused of, just that the paperwork steps were present. Whether the enquiry was conducted fairly (a neutral decision-maker, a genuine chance to respond, evidence actually considered) matters just as much as whether it happened at all.",
           ],
           nextSteps: [
             DOCUMENTS_STEP,
@@ -143,8 +143,8 @@ export function assessTermination(input: AssessmentInput): AssessmentResult {
               (gotChargeSheet === false && hadEnquiryMeeting === false
                 ? "you didn't receive a charge sheet and there was no real enquiry meeting."
                 : gotChargeSheet === false
-                ? "you didn't receive a charge sheet; normally a required part of that same process."
-                : "there wasn't an actual enquiry meeting; normally a required part of that same process."),
+                ? "you didn't receive a charge sheet, normally a required part of that same process."
+                : "there wasn't an actual enquiry meeting, normally a required part of that same process."),
             "An enquiry that's missing one of its required parts is often treated the same as no enquiry at all.",
           ],
           nextSteps: [DOCUMENTS_STEP, SAMADHAN_STEP, COMMISSIONER_STEP, NOTICE_TEMPLATE_STEP],
@@ -156,7 +156,7 @@ export function assessTermination(input: AssessmentInput): AssessmentResult {
         verdict: "needs_more_info",
         headline: "There isn't quite enough here to give you a clear read yet.",
         reasons: [
-          "Whether a misconduct dismissal was lawful usually comes down to two specific things: did you receive a written charge sheet, and did an actual enquiry meeting happen where you could respond. Try to pin those two details down, even roughly, they change the picture a lot.",
+          "Whether a misconduct dismissal was lawful usually comes down to two specific things: did you receive a written charge sheet, and did an actual enquiry meeting happen where you could respond. Try to pin those two details down, even roughly; they change the picture a lot.",
         ],
         nextSteps: [DOCUMENTS_STEP, SAMADHAN_STEP],
         disclaimer: DISCLAIMER,

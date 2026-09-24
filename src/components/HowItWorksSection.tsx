@@ -2,7 +2,7 @@ const STEPS = [
   {
     n: "01",
     title: "Answer a short set of questions",
-    body: "About your role, how you were let go, and whether you got the paperwork and process you were entitled to. Takes a few minutes, no employer name required — that's never collected, on purpose.",
+    body: "About your role, how you were let go, and whether you got the paperwork and process you were entitled to. Takes a few minutes, no employer name required; that's never collected, on purpose.",
   },
   {
     n: "02",
@@ -12,12 +12,12 @@ const STEPS = [
   {
     n: "03",
     title: "See clear next steps",
-    body: "Where to actually go from here — SAMADHAN (the government's labour dispute portal), your state Labour Commissioner, and what paperwork is worth gathering now, before anything else.",
+    body: "Where to actually go from here: SAMADHAN (the government's labour dispute portal), your state Labour Commissioner, and what paperwork is worth gathering now, before anything else.",
   },
   {
     n: "04",
     title: "Your case stays private, by default",
-    body: "It's reviewed before it can appear publicly, and only decides whether it counts toward anonymous pattern data or shows up in Stories. Review never blocks or delays your own read — that part is instant either way.",
+    body: "It's reviewed before it can appear publicly, and only decides whether it counts toward anonymous pattern data or shows up in Stories. Review never blocks or delays your own read, which stays instant either way.",
   },
 ];
 
@@ -44,7 +44,7 @@ export default function HowItWorksSection() {
 
         <p className="text-xs text-cream-100/40 text-center mt-8 leading-relaxed">
           Handled in line with India's DPDP Act, 2023. Nothing here is legal advice from a law
-          firm — it's a starting point, and SAMADHAN or a labour advocate is the next step for
+          firm. It's a starting point, and SAMADHAN or a labour advocate is the next step for
           anything formal.
         </p>
       </div>

@@ -1,6 +1,7 @@
 import Hero from "../components/Hero";
 import ComingSoonSection from "../components/ComingSoonSection";
 import FeaturedCases from "../components/FeaturedCases";
+import MoreCases from "../components/MoreCases";
 import RightsSection from "../components/RightsSection";
 
 export default function Home() {
@@ -8,6 +9,7 @@ export default function Home() {
     <>
       <Hero />
       <FeaturedCases />
+      <MoreCases />
       <RightsSection />
       <ComingSoonSection
         id="support"

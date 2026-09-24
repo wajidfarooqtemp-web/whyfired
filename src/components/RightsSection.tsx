@@ -21,24 +21,6 @@ export default function RightsSection() {
         </p>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 mb-6">
-          <h3 className="font-display text-lg text-cream-50 mb-3">The basic idea</h3>
-          <p className="text-sm text-cream-100/75 leading-relaxed mb-3">
-            Under the <span className="text-cream-50">Industrial Disputes Act, 1947</span>, still
-            the operative law in most states, an employer generally can't dismiss someone for
-            "misconduct" without following a fair process first: a documented reason, a formal
-            charge sheet, an enquiry where the employee can respond, and a decision that's
-            proportionate to what actually happened. A layoff or retrenchment carries its own
-            separate requirement: notice (or pay instead of notice) plus compensation.
-          </p>
-          <p className="text-sm text-cream-100/75 leading-relaxed">
-            The newer <span className="text-cream-50">Industrial Relations Code, 2020</span> carries
-            these same core protections forward as it rolls out state by state. Many BPO
-            terminations skip this process entirely and just call it "misconduct". That skipped
-            step is often exactly what makes a dismissal unlawful.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 mb-6">
           <h3 className="font-display text-lg text-cream-50 mb-4">
             Signs your termination may not have followed the law
           </h3>
@@ -51,8 +33,26 @@ export default function RightsSection() {
             ))}
           </ul>
           <p className="text-xs text-cream-100/40 mt-5 leading-relaxed">
-            Any one of these is worth a closer look; it doesn't automatically mean you'd win a
+            Any one of these is worth a closer look. It doesn't automatically mean you'd win a
             dispute, and it isn't a verdict. It's a reason to find out more.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 mb-6">
+          <h3 className="font-display text-lg text-cream-50 mb-3">The basic idea</h3>
+          <p className="text-sm text-cream-100/75 leading-relaxed mb-3">
+            Under the <span className="text-cream-50">Industrial Disputes Act, 1947</span> (still
+            the operative law in most states), an employer generally can't dismiss someone for
+            "misconduct" without following a fair process first: a documented reason, a formal
+            charge sheet, an enquiry where the employee can respond, and a decision that's
+            proportionate to what actually happened. A layoff or retrenchment carries its own
+            separate requirement: notice (or pay instead of notice) plus compensation.
+          </p>
+          <p className="text-sm text-cream-100/75 leading-relaxed">
+            The newer <span className="text-cream-50">Industrial Relations Code, 2020</span> carries
+            these same core protections forward as it rolls out state by state. Many BPO
+            terminations skip this process entirely and just call it "misconduct." That skipped
+            step is often exactly what makes a dismissal unlawful.
           </p>
         </div>
 

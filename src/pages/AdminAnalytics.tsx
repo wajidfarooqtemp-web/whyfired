@@ -34,7 +34,7 @@ export default function AdminAnalytics() {
         </Link>
         <h1 className="font-display text-2xl text-cream-50 mt-1 mb-1">Site activity</h1>
         <p className="text-cream-100/60 text-sm mb-8">
-          Page views only — no IP addresses are stored here. Registered users show their email;
+          Page views only. No IP addresses are stored here. Registered users show their email;
           everyone else shows as a session id, so a pattern of many rapid requests is still
           visible even when there's no account behind it.
         </p>

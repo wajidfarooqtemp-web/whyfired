@@ -47,9 +47,6 @@ export default function Navbar() {
             <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Stories
             </Link>
-            <Link to="/how-it-works" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-              How it works
-            </Link>
             <Link to="/contact" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
               Contact
             </Link>
@@ -127,6 +124,13 @@ export default function Navbar() {
 
               {legalOpen && (
                 <div className="absolute right-0 top-11 min-w-[10rem] rounded-xl border border-white/10 bg-brand-950 shadow-lg py-2">
+                  <Link
+                    to="/how-it-works"
+                    onClick={() => setLegalOpen(false)}
+                    className="block px-4 py-2 text-sm text-cream-100/80 hover:text-cream-50"
+                  >
+                    How it works
+                  </Link>
                   {LEGAL_LINKS.map((link) => (
                     <a
                       key={link.href}

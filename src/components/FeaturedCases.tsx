@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
 
 interface FeaturedCase {
@@ -15,14 +16,14 @@ interface FeaturedCase {
 
 export default function FeaturedCases() {
   const [cases, setCases] = useState<FeaturedCase[] | null>(null);
+  const { session } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      // Public view, readable by anyone whether logged in or not —
-      // the only thing on the site that is. Everything else still
-      // requires an account.
+      // Public view, readable by anyone whether logged in or not.
+      // Everything else on the site still requires an account.
       const { data } = await supabase
         .from("featured_cases_public")
         .select("id, role_duties, country, termination_reason, story_excerpt, story_truncated, created_at");
@@ -35,7 +36,7 @@ export default function FeaturedCases() {
     };
   }, []);
 
-  // Nothing featured yet — render nothing rather than an empty section.
+  // Nothing featured yet: render nothing rather than an empty section.
   if (!cases || cases.length === 0) return null;
 
   return (
@@ -46,7 +47,7 @@ export default function FeaturedCases() {
             Some of what people have shared
           </h2>
           <p className="text-cream-100/60 text-sm leading-relaxed">
-            These are real cases, reviewed before appearing here. No names, no employers; just
+            These are real cases, reviewed before appearing here. No names, no employers, just
             what happened. Log in to read the full story, join the conversation, or share your own.
           </p>
         </div>
@@ -68,13 +69,22 @@ export default function FeaturedCases() {
                 {c.story_truncated && <span className="text-cream-100/40">&hellip;</span>}
               </p>
 
-              <Link
-                to="/login"
-                state={{ from: { pathname: `/stories/${c.id}` } }}
-                className="mt-4 inline-flex text-sm text-cream-50 underline underline-offset-2 self-start"
-              >
-                Log in to read the full story
-              </Link>
+              {session ? (
+                <Link
+                  to={`/stories/${c.id}`}
+                  className="mt-4 inline-flex text-sm text-cream-50 underline underline-offset-2 self-start"
+                >
+                  Read the full story
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  state={{ from: { pathname: `/stories/${c.id}` } }}
+                  className="mt-4 inline-flex text-sm text-cream-50 underline underline-offset-2 self-start"
+                >
+                  Log in to read the full story
+                </Link>
+              )}
             </div>
           ))}
         </div>
