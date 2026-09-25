@@ -31,10 +31,16 @@ export default function MoreCases() {
   if (!session || !cases || cases.length === 0) return null;
 
   return (
-    <section id="stories" className="relative bg-feed-bg px-3 sm:px-5 pt-24 pb-24">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-brand-950 to-transparent" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-brand-950 to-transparent" />
-      <div className="relative max-w-[640px] mx-auto">
+    <section id="stories" className="bg-feed-bg">
+      {/* Opaque two-colour gradients top and bottom, so the section
+          reads as one continuous surface between the dark hero above
+          and the dark Rights section below, with no washed-out band. */}
+      <div
+        aria-hidden="true"
+        className="h-24"
+        style={{ background: "linear-gradient(to bottom, var(--color-brand-950), var(--color-feed-bg))" }}
+      />
+      <div className="max-w-[640px] mx-auto px-3 sm:px-5 py-10">
         <div className="flex items-end justify-between flex-wrap gap-3 mb-4 px-1">
           <h2 className="font-display text-2xl text-ink">Latest stories</h2>
           <Link to="/stories" className="text-sm text-brand-700 font-medium hover:underline">
@@ -43,6 +49,11 @@ export default function MoreCases() {
         </div>
         <FeedList cases={cases} />
       </div>
+      <div
+        aria-hidden="true"
+        className="h-24"
+        style={{ background: "linear-gradient(to bottom, var(--color-feed-bg), var(--color-brand-950))" }}
+      />
     </section>
   );
 }

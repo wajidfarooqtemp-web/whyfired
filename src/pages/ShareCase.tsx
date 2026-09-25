@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
@@ -62,6 +62,12 @@ export default function ShareCase() {
   const [gotChargeSheet, setGotChargeSheet] = useState("");
   const [hadEnquiry, setHadEnquiry] = useState("");
   const [storyText, setStoryText] = useState("");
+  // One key per attempt at filling out this form, generated once
+// when the page loads and reused on every submit attempt,
+// including an automatic retry after a dropped connection. Lets
+// the server tell "the same submission again" apart from "a
+// second, different submission."
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +111,7 @@ export default function ShareCase() {
         got_charge_sheet: toBool(gotChargeSheet),
         had_enquiry_meeting: toBool(hadEnquiry),
         story_text: storyText,
+        idempotency_key: idempotencyKeyRef.current,
       },
     });
 

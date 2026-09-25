@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
+import { timeAgo, fullTimestamp } from "../lib/time";
 import { ArrowUpIcon, ArrowDownIcon, CommentIcon, TrashIcon, UserIcon } from "./icons";
 
 export interface FeedCase {
@@ -39,16 +40,6 @@ interface ThreadComment {
 }
 
 const COLLAPSED_LENGTH = 280;
-
-function timeAgo(iso: string): string {
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h`;
-  if (s < 86400 * 7) return `${Math.floor(s / 86400)}d`;
-  if (s < 86400 * 30) return `${Math.floor(s / (86400 * 7))}w`;
-  if (s < 86400 * 365) return `${Math.floor(s / (86400 * 30))}mo`;
-  return `${Math.floor(s / (86400 * 365))}y`;
-}
 
 // 999 -> "999", 1200 -> "1.2k", 15300 -> "15.3k"
 function formatCount(n: number): string {
@@ -95,7 +86,7 @@ function CommentBubble({
         <div className="rounded-lg rounded-tl-none bg-feed-bg px-3 py-2">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-[13px] font-semibold text-ink truncate">{name ?? "Anonymous"}</span>
-            <span className="text-xs text-ink-soft shrink-0">
+            <span className="text-xs text-ink-soft shrink-0" title={fullTimestamp(createdAt)}>
               {timeAgo(createdAt)}
               {edited ? " \u00b7 edited" : ""}
             </span>
@@ -385,7 +376,9 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
             {c.country} &middot; {terminationReasonLabel(c.termination_reason)}
           </div>
           <div className="text-xs text-ink-soft leading-snug">
-            {timeAgo(c.created_at)}
+            <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
+              {timeAgo(c.created_at)}
+            </time>
             {c.category ? <> &middot; {c.category.name}</> : null}
           </div>
         </div>

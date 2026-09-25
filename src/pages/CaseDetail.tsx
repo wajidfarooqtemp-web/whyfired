@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { terminationReasonLabel } from "../lib/constants";
+import { timeAgo, fullTimestamp } from "../lib/time";
 
 interface CaseDetailRow {
   id: string;
@@ -111,6 +112,10 @@ export default function CaseDetail() {
           <div className="flex flex-wrap items-center gap-2 text-xs text-cream-100/50 mb-4">
             <span>{caseData.author?.display_name ?? "Anonymous"}</span>
             <span>&middot;</span>
+            <time dateTime={caseData.created_at} title={fullTimestamp(caseData.created_at)}>
+              {timeAgo(caseData.created_at)}
+            </time>
+            <span>&middot;</span>
             <span>{caseData.country}</span>
             <span>&middot;</span>
             <span>{terminationReasonLabel(caseData.termination_reason)}</span>
@@ -156,7 +161,13 @@ export default function CaseDetail() {
         <div className="space-y-4">
           {comments.map((c) => (
             <div key={c.id} className="border-t border-white/10 pt-4">
-              <div className="text-xs text-cream-100/50 mb-1">{c.author?.display_name ?? "Anonymous"}</div>
+              <div className="text-xs text-cream-100/50 mb-1 flex items-center gap-1.5">
+                <span>{c.author?.display_name ?? "Anonymous"}</span>
+                <span>&middot;</span>
+                <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
+                  {timeAgo(c.created_at)}
+                </time>
+              </div>
               <p className="text-cream-50 text-sm leading-relaxed">{c.body}</p>
             </div>
           ))}

@@ -1,15 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import Turnstile from "../components/Turnstile";
-import GoogleButton from "../components/GoogleButton";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/share";
@@ -18,11 +15,7 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-      options: { captchaToken: captchaToken ?? undefined },
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (error) {
       setError(error.message);
@@ -31,6 +24,25 @@ export default function Login() {
     navigate(from, { replace: true });
   }
 
+  async function handleGoogle() {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}${from}` },
+    });
+  }
+
+  // Requires the "LinkedIn (OIDC)" provider turned on in Supabase:
+  // Authentication -> Providers -> LinkedIn (OIDC), with a Client ID
+  // and Client Secret from a LinkedIn app that has the "Sign In with
+  // LinkedIn using OpenID Connect" product added. The provider id
+  // Supabase expects is exactly "linkedin_oidc" (the older plain
+  // "linkedin" provider is deprecated and will not work).
+  async function handleLinkedIn() {
+    await supabase.auth.signInWithOAuth({
+      provider: "linkedin_oidc",
+      options: { redirectTo: `${window.location.origin}${from}` },
+    });
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 pt-16">
@@ -40,11 +52,26 @@ export default function Login() {
           Your case stays private until you choose to share it.
         </p>
 
-         <GoogleButton />
+        <div className="space-y-2.5 mb-4">
+          <button
+            type="button"
+            onClick={handleGoogle}
+            className="w-full rounded-lg border border-white/20 text-cream-50 text-sm py-2.5 hover:border-white/40 transition-colors"
+          >
+            Continue with Google
+          </button>
+          <button
+            type="button"
+            onClick={handleLinkedIn}
+            className="w-full rounded-lg border border-white/20 text-cream-50 text-sm py-2.5 hover:border-white/40 transition-colors"
+          >
+            Continue with LinkedIn
+          </button>
+        </div>
 
         <div className="flex items-center gap-3 mb-4">
           <div className="h-px flex-1 bg-white/10" />
-          <span className="text-cream-100/40 text-xs">or</span>
+          <span className="text-cream-100/40 text-xs">or, if you already have a password</span>
           <div className="h-px flex-1 bg-white/10" />
         </div>
 
@@ -68,20 +95,14 @@ export default function Login() {
 
           {error && <p className="text-sm text-red-300">{error}</p>}
 
-          <Turnstile onVerify={setCaptchaToken} />
-
           <button
             type="submit"
-            disabled={submitting || !captchaToken}
+            disabled={submitting}
             className="w-full rounded-full bg-cream-50 text-brand-900 text-sm font-medium py-2.5 hover:bg-white transition-colors disabled:opacity-60"
           >
             {submitting ? "Logging in..." : "Log in"}
           </button>
         </form>
-
-        <p className="text-cream-100/50 text-sm mt-5 text-center">
-          New here? <Link to="/signup" className="text-cream-100 underline">Create an account</Link>
-        </p>
       </div>
     </div>
   );

@@ -1,20 +1,29 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
-
-const NAV_LINKS = [
-  { label: "Rights", href: "/#rights" },
-];
+import { HomeIcon, PlusSquareIcon, BookIcon, ChartIcon, ShieldIcon } from "./icons";
 
 const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy.html" },
   { label: "Terms of Use", href: "/terms.html" },
 ];
 
+// Desktop nav items, LinkedIn-style: an icon stacked above a small
+// label. "route" items highlight when the current path matches;
+// "Rights" is a same-page anchor, so it never shows as active.
+const NAV_ITEMS = [
+  { label: "Home", to: "/", icon: HomeIcon, route: true },
+  { label: "Share", to: "/share", icon: PlusSquareIcon, route: true },
+  { label: "Stories", to: "/stories", icon: BookIcon, route: true },
+  { label: "Patterns", to: "/patterns", icon: ChartIcon, route: true },
+  { label: "Rights", to: "/#rights", icon: ShieldIcon, route: false },
+] as const;
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
   const { session, profile, signOut } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -25,43 +34,49 @@ export default function Navbar() {
 
   const handleLinkClick = () => setMenuOpen(false);
 
+  function isActive(to: string) {
+    return to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+  }
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-brand-950/60 border-b border-white/10">
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-5 sm:px-8 h-16">
           <Link
             to="/"
-            className="flex items-center gap-2 font-display text-lg sm:text-xl tracking-tight text-cream-50"
+            className="flex items-center gap-2 font-display text-lg sm:text-xl tracking-tight text-cream-50 shrink-0"
           >
             <img src="/logo-mark.png" alt="" className="h-7 w-7" />
             Why Fired
           </Link>
 
-          <div className="hidden md:flex items-center gap-9">
-            <Link to="/" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-              Home
-            </Link>
-            <Link to="/share" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-              Share
-            </Link>
-            <Link to="/stories" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-              Stories
-            </Link>
-            <Link to="/patterns" className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors">
-              Patterns
-            </Link>
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm text-cream-100/80 hover:text-cream-50 transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
+          <div className="hidden md:flex items-center gap-1">
+            {NAV_ITEMS.map((item) => {
+              const active = item.route && isActive(item.to);
+              const Icon = item.icon;
+              const cls = `flex flex-col items-center gap-0.5 px-3 h-16 justify-center border-b-2 transition-colors ${
+                active
+                  ? "border-cream-50 text-cream-50"
+                  : "border-transparent text-cream-100/70 hover:text-cream-50"
+              }`;
+              return item.route ? (
+                <Link key={item.label} to={item.to} className={cls}>
+                  <Icon size={20} filled={active} />
+                  <span className="text-[11px] leading-none">{item.label}</span>
+                </Link>
+              ) : (
+                <a key={item.label} href={item.to} className={cls}>
+                  <Icon size={20} />
+                  <span className="text-[11px] leading-none">{item.label}</span>
+                </a>
+              );
+            })}
             {profile?.is_admin && (
-              <Link to="/admin" className="text-sm text-cream-50 hover:text-white transition-colors">
-                Admin
+              <Link
+                to="/admin"
+                className="flex flex-col items-center gap-0.5 px-3 h-16 justify-center border-b-2 border-transparent text-cream-50 hover:text-white"
+              >
+                <span className="text-[11px] leading-none font-medium">Admin</span>
               </Link>
             )}
           </div>
@@ -123,8 +138,8 @@ export default function Navbar() {
                 <div className="absolute right-0 top-11 min-w-[10rem] rounded-xl border border-white/10 bg-brand-950 shadow-lg py-2">
                   <Link
                     to="/how-it-works"
-                    onClick={() => setLegalOpen(false)}
                     className="block px-4 py-2 text-sm text-cream-100/80 hover:text-cream-50"
+                    onClick={() => setLegalOpen(false)}
                   >
                     How it works
                   </Link>
@@ -135,7 +150,7 @@ export default function Navbar() {
                   >
                     Contact
                   </Link>
-                  <div className="my-1 border-t border-white/10" />                  
+                  <div className="my-1 border-t border-white/10" />
                   {LEGAL_LINKS.map((link) => (
                     <a
                       key={link.href}
@@ -192,25 +207,18 @@ export default function Navbar() {
           <Link to="/stories" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Stories
           </Link>
+          <a href="/#rights" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Rights
+          </a>
+          <Link to="/patterns" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
+            Patterns
+          </Link>
           <Link to="/how-it-works" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             How it works
           </Link>
           <Link to="/contact" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
             Contact
           </Link>
-          <Link to="/patterns" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
-            Patterns
-          </Link>
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={handleLinkClick}
-              className="text-2xl font-display text-cream-50"
-            >
-              {link.label}
-            </a>
-          ))}
           {profile?.is_admin && (
             <Link to="/admin" onClick={handleLinkClick} className="text-2xl font-display text-cream-50">
               Admin

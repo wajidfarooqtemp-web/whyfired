@@ -120,6 +120,28 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const errors: ValidationError[] = [];
 
+    // Idempotency key: one per attempt at submitting the form, sent
+    // by the client, reused if it has to retry the same attempt.
+    // Checked before validation, so a retry of an already-succeeded
+    // submission returns that same case rather than re-validating
+    // (and possibly re-rejecting) content the person can no longer
+    // see or change on this request.
+    const idempotencyKey = typeof body.idempotency_key === "string" ? body.idempotency_key.trim() : "";
+    if (idempotencyKey.length < 8 || idempotencyKey.length > 100) {
+      return json({ error: "Missing or invalid request key. Please reload and try again." }, 400);
+    }
+
+    const { data: existing } = await supabase
+      .from("cases")
+      .select("id, status")
+      .eq("user_id", user.id)
+      .eq("idempotency_key", idempotencyKey)
+      .maybeSingle();
+
+    if (existing) {
+      return json({ id: existing.id, status: existing.status }, 200);
+    }
+
     const roleDuties = typeof body.role_duties === "string" ? sanitizeText(body.role_duties) : "";
     if (roleDuties.length < 3 || roleDuties.length > 500) {
       errors.push({ field: "role_duties", message: "Describe your role in 3 to 500 characters." });
@@ -188,13 +210,25 @@ Deno.serve(async (req) => {
         got_charge_sheet: gotChargeSheet,
         had_enquiry_meeting: hadEnquiryMeeting,
         story_text: storyText,
+        idempotency_key: idempotencyKey,
       })
       .select("id, status")
       .single();
 
     if (error) {
-      // Most likely the "one active case per user" unique index.
       if (error.code === "23505") {
+        // Two requests with the same key arrived at once (e.g. a
+        // double-click); the loser here is really a success too.
+        if (error.message.includes("cases_user_idempotency_key")) {
+          const { data: raceRow } = await supabase
+            .from("cases")
+            .select("id, status")
+            .eq("user_id", user.id)
+            .eq("idempotency_key", idempotencyKey)
+            .maybeSingle();
+          if (raceRow) return json({ id: raceRow.id, status: raceRow.status }, 200);
+        }
+        // Otherwise it's the "one active case per user" unique index.
         return json({ error: "You already have a case submitted. Only one active submission is allowed at a time." }, 409);
       }
       return json({ error: "Could not save your case. Please try again." }, 500);

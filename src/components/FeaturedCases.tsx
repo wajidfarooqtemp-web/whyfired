@@ -44,10 +44,13 @@ export default function FeaturedCases() {
   if (loading || session || !cases || cases.length === 0) return null;
 
   return (
-    <section id="cases" className="relative bg-feed-bg px-3 sm:px-5 pt-24 pb-24">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-brand-950 to-transparent" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-brand-950 to-transparent" />
-      <div className="relative max-w-[640px] mx-auto">
+    <section id="cases" className="bg-feed-bg">
+      <div
+        aria-hidden="true"
+        className="h-24"
+        style={{ background: "linear-gradient(to bottom, var(--color-brand-950), var(--color-feed-bg))" }}
+      />
+      <div className="max-w-[640px] mx-auto px-3 sm:px-5 py-10">
         <div className="mb-5 px-1">
           <h2 className="font-display text-2xl sm:text-3xl text-ink mb-2">Some of what people have shared</h2>
           <p className="text-ink-soft text-sm leading-relaxed">
@@ -89,6 +92,11 @@ export default function FeaturedCases() {
           ))}
         </div>
       </div>
+      <div
+        aria-hidden="true"
+        className="h-24"
+        style={{ background: "linear-gradient(to bottom, var(--color-feed-bg), var(--color-brand-950))" }}
+      />
     </section>
   );
 }
