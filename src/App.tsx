@@ -1,3 +1,4 @@
+import Footer from "./components/Footer";
 import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -10,7 +11,6 @@ import Home from "./pages/Home";
 // else; every other page below is fetched only when someone
 // actually navigates there, keeping that first load light.
 const Login = lazy(() => import("./pages/Login"));
-const Signup = lazy(() => import("./pages/Signup"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const ShareCase = lazy(() => import("./pages/ShareCase"));
 const Stories = lazy(() => import("./pages/Stories"));
@@ -41,7 +41,6 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route
             path="/share"
@@ -101,6 +100,7 @@ function App() {
           />
         </Routes>
       </Suspense>
+      <Footer />
     </div>
   );
 }
