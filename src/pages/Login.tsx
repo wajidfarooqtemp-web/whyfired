@@ -1,28 +1,9 @@
-import { useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/share";
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setSubmitting(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    navigate(from, { replace: true });
-  }
 
   async function handleGoogle() {
     await supabase.auth.signInWithOAuth({
@@ -52,7 +33,7 @@ export default function Login() {
           Your case stays private until you choose to share it.
         </p>
 
-        <div className="space-y-2.5 mb-4">
+        <div className="space-y-2.5">
           <button
             type="button"
             onClick={handleGoogle}
@@ -68,41 +49,6 @@ export default function Login() {
             Continue with LinkedIn
           </button>
         </div>
-
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-px flex-1 bg-white/10" />
-          <span className="text-cream-100/40 text-xs">or, if you already have a password</span>
-          <div className="h-px flex-1 bg-white/10" />
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="email"
-            required
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-cream-50 placeholder-cream-100/40 focus:border-white/40 outline-none"
-          />
-          <input
-            type="password"
-            required
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-cream-50 placeholder-cream-100/40 focus:border-white/40 outline-none"
-          />
-
-          {error && <p className="text-sm text-red-300">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-full bg-cream-50 text-brand-900 text-sm font-medium py-2.5 hover:bg-white transition-colors disabled:opacity-60"
-          >
-            {submitting ? "Logging in..." : "Log in"}
-          </button>
-        </form>
       </div>
     </div>
   );
