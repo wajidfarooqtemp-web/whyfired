@@ -1,3 +1,4 @@
+html
 <!doctype html>
 <html lang="en">
   <head>
@@ -66,6 +67,10 @@
         font-size: 15px;
       }
       ul { padding-left: 20px; }
+      a.inline {
+        color: var(--cream-50);
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
@@ -74,35 +79,150 @@
     </header>
     <main>
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: this page is a placeholder and will be replaced with a full policy before the site collects any real user data.</p>
+      <p class="updated">Last updated: September 25, 2026</p>
 
-      <h2>What this page will cover</h2>
+      <h2>Who this policy covers</h2>
       <p>
-        Why Fired is built around a simple rule: your case is yours. This
-        policy will explain, in plain language, exactly what information we
-        collect, why we collect it, and who can see it.
+        This policy explains what Why Fired ("we," "us") collects when you use
+        whyfired.com, why we collect it, and who can see it. Why Fired is an
+        information and documentation tool for people navigating a job
+        termination; it is not a law firm, and this policy is not legal advice.
+        If anything here is unclear, email us at
+        <a class="inline" href="mailto:hello@whyfired.com">hello@whyfired.com</a>.
       </p>
 
-      <h2>What we will never do</h2>
+      <h2>What we never do</h2>
       <ul>
-        <li>We will never publicly display the name of your employer.</li>
-        <li>We will never link your donation history to your case submission.</li>
-        <li>We will never sell your data to anyone.</li>
+        <li>We never publicly display the name of your employer.</li>
+        <li>We never link your support to your case submission. The two are stored in separate systems with no connection between them, enforced at the database level, not just in how the app is written.</li>
+        <li>We never sell your data, and we never share it with advertisers.</li>
+        <li>We never show your real name or the email address behind your account to other users. What other people see is the anonymous display name you choose when you first sign in.</li>
       </ul>
+
+      <h2>Signing in with Google or LinkedIn</h2>
+      <p>
+        Why Fired uses Google Sign-In and "Sign In with LinkedIn using OpenID
+        Connect" to create and log you into your account. When you sign in this
+        way, the provider shares your name and email address with us. We use
+        this only to create your account and to contact you about that account
+        if we ever need to (for example, a moderation decision on a case you
+        submitted). We do not use it for marketing, we do not share it with
+        anyone else, and we do not post it publicly. The name shown on your
+        posts and comments is a separate, anonymous display name you pick
+        yourself, not your Google or LinkedIn name.
+      </p>
+      <p>
+        Our use of information received from Google APIs adheres to the
+        <a class="inline" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>,
+        including the Limited Use requirements.
+      </p>
+
+      <h2>What we collect, and why</h2>
+      <p>
+        <strong>Account information.</strong> Your email address (from Google
+        or LinkedIn) and the anonymous display name you choose. The email is
+        stored by our authentication provider, Supabase, and is never shown to
+        other users.
+      </p>
+      <p>
+        <strong>Case information.</strong> If you submit a case, we store what
+        you enter in the questionnaire and your written story. Your role,
+        approximate salary and tenure, country, and the details of how your
+        employment ended. We automatically screen this text for employer names
+        so a moderator can catch and remove them before a case is published.
+        That automated check is a safety net, not a guarantee, so please avoid
+        naming your employer yourself.
+      </p>
+      <p>
+        <strong>Comments and votes.</strong> Comments you post on approved
+        cases, and any upvote or downvote you cast. Votes are stored one per
+        person per case so nobody, including us, can see how any individual
+        account voted from the outside. Only the total score is shown.
+      </p>
+      <p>
+        <strong>Basic visit data.</strong> We log which pages are viewed and
+        when, so we can tell whether the site is working and being used. If
+        you're logged in, that log is tied to your account. If you're not, it's
+        tied to a random id generated for that browser tab, stored only in
+        that tab's session storage and gone once you close it. We do not use
+        this to build a profile of you across visits, and no IP address is
+        stored in this log.
+      </p>
+      <p>
+        <strong>Abuse prevention.</strong> To stop scripted abuse (for example,
+        one person creating many accounts to flood the site), we keep a short-
+        lived record of how many case or comment submissions have recently come
+        from a given IP address. The IP address itself is hashed before it's
+        stored. We don't keep it in plain text, and this record isn't used to
+        identify or track anyone, only to count recent attempts. Old entries
+        are deleted automatically.
+      </p>
+      <p>
+        <strong>Cookies and local storage.</strong> We don't use tracking or
+        advertising cookies. The only browser storage we use is the temporary,
+        per-tab session id described above and, if you're logged in, the
+        session token that keeps you signed in.
+      </p>
+
+      <h2>Who we share data with</h2>
+      <p>
+        We use a small number of service providers to run Why Fired, and share
+        only what each one needs to do its job:
+      </p>
+      <ul>
+        <li><strong>Supabase</strong>, hosts our database, authentication, and backend functions. This is where your account and case data physically live.</li>
+        <li><strong>Google and LinkedIn</strong>, used only to sign you in, as described above.</li>
+        <li><strong>Vercel</strong>, hosts the website itself.</li>
+      </ul>
+      <p>
+        None of these providers are permitted to use your data for their own
+        purposes. We do not share data with anyone else, and we have never
+        sold, and will never sell, user data to a third party.
+      </p>
+
+      <h2>How long we keep your data</h2>
+      <p>
+        We keep your account and case data for as long as your account exists.
+        If you'd like your account and everything tied to it deleted, email us
+        (see below) and we'll do so, subject to a short window where we may
+        need to keep minimal records to deal with an active moderation dispute
+        or a legal requirement. Abuse-prevention records are deleted
+        automatically after 24 hours.
+      </p>
 
       <h2>Your rights under the DPDP Act, 2023</h2>
       <p>
-        As an Indian data protection law, the Digital Personal Data
-        Protection Act gives you rights over your own information; including
-        the right to know what we hold and the right to ask us to delete it.
-        This section will be filled in with the specific process once the
-        data-collection features are built.
+        As an Indian data protection law, the Digital Personal Data Protection
+        Act gives you rights over your own information, including the right to
+        know what we hold about you, the right to correct it, and the right to
+        ask us to erase it. To exercise any of these, email
+        <a class="inline" href="mailto:hello@whyfired.com">hello@whyfired.com</a>
+        from the address associated with your account. We'll confirm your
+        identity and respond within a reasonable time. If you're outside India,
+        we'll honor the same rights regardless of which privacy law technically
+        applies to you.
+      </p>
+
+      <h2>Children's privacy</h2>
+      <p>
+        Why Fired is intended for adults dealing with employment matters and is
+        not directed at children. We don't knowingly collect data from anyone
+        under 18. If you believe a child has created an account, contact us and
+        we'll remove it.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If we make a material change to this policy, we'll update the date at
+        the top of this page. We won't reduce your rights under this policy
+        without giving you notice.
       </p>
 
       <h2>Questions</h2>
       <p>
-        Once the contact page is live, you will be able to reach us there
-        with any privacy questions.
+        Reach us any time at
+        <a class="inline" href="mailto:hello@whyfired.com">hello@whyfired.com</a>
+        with privacy questions, or anything else.
       </p>
     </main>
   </body>
