@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { HomeIcon, PlusSquareIcon, BookIcon, ChartIcon, ShieldIcon } from "./icons";
+import SupportButton from "./SupportButton";
 
 const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy.html" },
@@ -107,12 +108,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            <a
-              href="/#support"
-              className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2 hover:text-cream-50 hover:border-white/40 transition-colors"
-            >
-              <span aria-hidden="true">&#9829;</span> Support
-            </a>
+            <SupportButton className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2 hover:text-cream-50 hover:border-white/40 transition-colors" />
 
             <Link
               to="/share"
@@ -232,13 +228,10 @@ export default function Navbar() {
           >
             Share your case
           </Link>
-          <a
-            href="/#support"
+          <SupportButton
             onClick={handleLinkClick}
             className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 text-cream-100/80 text-sm px-3.5 py-2"
-          >
-            <span aria-hidden="true">&#9829;</span> Support
-          </a>
+          />
 
           {session ? (
             <div className="flex items-center gap-3">

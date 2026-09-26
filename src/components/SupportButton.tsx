@@ -29,7 +29,13 @@ function loadRazorpayScript(): Promise<void> {
 // Drop this in wherever the old `<a href="/#support">Support</a>` was
 // (the navbar, most likely) — it renders its own button and modal, so
 // nothing else needs to manage its open/closed state.
-export default function SupportButton({ className }: { className?: string }) {
+export default function SupportButton({
+  className,
+  onClick,
+}: {
+  className?: string;
+  onClick?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [amountRupees, setAmountRupees] = useState<number>(100);
   const [customAmount, setCustomAmount] = useState("");
@@ -113,7 +119,10 @@ export default function SupportButton({ className }: { className?: string }) {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          onClick?.();
+        }}
         className={
           className ??
           "inline-flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-sm text-cream-100/80 hover:text-cream-50 hover:border-white/30 transition-colors"

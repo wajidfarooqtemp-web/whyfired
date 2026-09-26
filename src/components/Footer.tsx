@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import SupportButton from "./SupportButton";
 
 const YEAR = new Date().getFullYear();
 
@@ -17,7 +18,6 @@ const COLUMNS: { heading: string; links: { label: string; to: string; external?:
     links: [
       { label: "How it works", to: "/how-it-works" },
       { label: "Contact", to: "/contact" },
-      { label: "Support us", to: "/#support" },
     ],
   },
   {
@@ -75,6 +75,11 @@ export default function Footer() {
                       </Link>
                     </li>
                   )
+                )}
+                {col.heading === "Company" && (
+                  <li>
+                    <SupportButton className="text-sm text-cream-100/70 hover:text-cream-50 transition-colors" />
+                  </li>
                 )}
               </ul>
             </div>
