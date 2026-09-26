@@ -121,7 +121,12 @@ export default function CaseDetail() {
                 <VerifiedBadge size={13} />
               </span>
             ) : (
-              <span>{caseData.author?.display_name ?? "Anonymous"}</span>
+              // Matches FeedPost.tsx: a case's own author is always
+              // "Shared anonymously" here, regardless of the real
+              // display_name on the row — unlike comments below,
+              // which do show real names (see CommentBubble in
+              // FeedPost.tsx; that's intentional, not an oversight).
+              <span>Shared anonymously</span>
             )}
             <span>&middot;</span>
             <time dateTime={caseData.created_at} title={fullTimestamp(caseData.created_at)}>
