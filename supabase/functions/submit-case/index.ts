@@ -165,23 +165,15 @@ Deno.serve(async (req) => {
       return json({ id: existing.id, status: existing.status }, 200);
     }
 
-    // Official path: a category and a story, nothing else — none of
-    // the rest of the questionnaire means anything for an
-    // announcement, so we don't ask for it. The row still satisfies
-    // every column the table requires; the unused ones just get a
-    // placeholder value that the feed never displays for a post
-    // flagged posted_as_official (see FeedPost.tsx).
+    // Official path: just a story, nothing else — none of the rest
+    // of the questionnaire means anything for an announcement, so we
+    // don't ask for it. That includes category_id, which used to be
+    // required here even though categories (see migration/schema.sql)
+    // are termination-reason tags like "No reason given" — meaningless
+    // for a post that isn't about anyone's termination. It's left null
+    // on this path now, and the feed never displays a category tag for
+    // a post flagged posted_as_official (see FeedPost.tsx/CaseDetail.tsx).
     if (postAsOfficial) {
-      const categoryId = typeof body.category_id === "string" ? body.category_id : "";
-      const { data: categoryRow } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("id", categoryId)
-        .maybeSingle();
-      if (!categoryRow) {
-        errors.push({ field: "category_id", message: "Select a category." });
-      }
-
       const officialStory = typeof body.story_text === "string" ? sanitizeText(body.story_text) : "";
       const officialWords = wordCount(officialStory);
       if (officialWords < 3) {
@@ -209,7 +201,7 @@ Deno.serve(async (req) => {
           got_charge_sheet: null,
           had_enquiry_meeting: null,
           story_text: officialStory,
-          category_id: categoryId,
+          category_id: null,
           posted_as_official: true,
           status: "approved",
           approved_at: new Date().toISOString(),

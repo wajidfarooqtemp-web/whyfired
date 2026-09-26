@@ -135,7 +135,7 @@ export default function CaseDetail() {
                 <span>{terminationReasonLabel(caseData.termination_reason)}</span>
               </>
             )}
-            {caseData.category && (
+            {!caseData.posted_as_official && caseData.category && (
               <>
                 <span>&middot;</span>
                 <span className="text-cream-100/70">{caseData.category.name}</span>

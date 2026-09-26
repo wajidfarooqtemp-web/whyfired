@@ -1,11 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-
-interface Category {
-  id: string;
-  name: string;
-}
 
 // Admin-only. Publishes a case straight to Stories, already
 // approved, under the "Why Fired" byline (see FeedPost.tsx's
@@ -13,9 +8,16 @@ interface Category {
 // The database enforces the admin check independently of this page
 // (see submit-case and migration_013), so this form is a convenience,
 // not the actual security boundary.
+//
+// No category/reason tag here on purpose: those (categories table:
+// "No reason given", "Misconduct...", etc.) exist to describe *why
+// someone was let go*, which an admin announcement isn't about. It
+// used to reuse that same picker and forced you to select one of
+// those tags before publishing — that's what was showing up as
+// "· No reason given" under official posts in the feed. Fixed at
+// both ends: this form no longer asks, and FeedPost/CaseDetail no
+// longer render a category tag on a posted_as_official case.
 export default function AdminPostOfficial() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryId, setCategoryId] = useState("");
   const [storyText, setStoryText] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
@@ -33,14 +35,6 @@ export default function AdminPostOfficial() {
     [storyText]
   );
 
-  useEffect(() => {
-    supabase
-      .from("categories")
-      .select("id, name")
-      .order("sort_order")
-      .then(({ data }) => setCategories(data ?? []));
-  }, []);
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -50,7 +44,6 @@ export default function AdminPostOfficial() {
     const { data, error: invokeError } = await supabase.functions.invoke("submit-case", {
       body: {
         post_as_official: true,
-        category_id: categoryId,
         story_text: storyText,
         idempotency_key: idempotencyKeyRef.current,
       },
@@ -93,7 +86,6 @@ export default function AdminPostOfficial() {
             <button
               onClick={() => {
                 setStoryText("");
-                setCategoryId("");
                 idempotencyKeyRef.current = crypto.randomUUID();
                 setDone(false);
               }}
@@ -131,24 +123,6 @@ export default function AdminPostOfficial() {
               anonymously." Skips the pending queue entirely — check it over before hitting Publish.
             </p>
           </div>
-
-          <label className="block">
-            <span className="block text-xs text-cream-100/70 mb-1.5">Category</span>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              required
-              className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-cream-50 focus:border-white/40 outline-none"
-            >
-              <option value="" disabled>Select</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-            {fieldErrors.category_id && (
-              <span className="block text-xs text-red-300 mt-1">{fieldErrors.category_id}</span>
-            )}
-          </label>
 
           <label className="block">
             <span className="block text-xs text-cream-100/70 mb-1.5">Post text</span>

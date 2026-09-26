@@ -414,7 +414,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
             <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
               {timeAgo(c.created_at)}
             </time>
-            {c.category ? <> &middot; {c.category.name}</> : null}
+            {!c.posted_as_official && c.category ? <> &middot; {c.category.name}</> : null}
           </div>
         </div>
       </div>
