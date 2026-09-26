@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { terminationReasonLabel } from "../lib/constants";
 import { timeAgo, fullTimestamp } from "../lib/time";
+import { VerifiedBadge } from "../components/icons";
 
 interface CaseDetailRow {
   id: string;
@@ -17,6 +18,10 @@ interface CaseDetailRow {
   created_at: string;
   category: { name: string } | null;
   author: { display_name: string } | null;
+  // See FeedPost.tsx: true only for a case an admin posted directly
+  // under the Why Fired byline. Suppresses the questionnaire fields
+  // below, since none of them mean anything for that kind of post.
+  posted_as_official: boolean;
 }
 
 interface CommentRow {
@@ -51,7 +56,7 @@ export default function CaseDetail() {
       supabase
         .from("cases")
         .select(
-          "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, category:categories(name), author:profiles(display_name)"
+          "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, posted_as_official, category:categories(name), author:profiles(display_name)"
         )
         .eq("id", id)
         .single(),
@@ -110,15 +115,26 @@ export default function CaseDetail() {
 
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-6">
           <div className="flex flex-wrap items-center gap-2 text-xs text-cream-100/50 mb-4">
-            <span>{caseData.author?.display_name ?? "Anonymous"}</span>
+            {caseData.posted_as_official ? (
+              <span className="inline-flex items-center gap-1 text-cream-100/80 font-medium">
+                Why Fired
+                <VerifiedBadge size={13} />
+              </span>
+            ) : (
+              <span>{caseData.author?.display_name ?? "Anonymous"}</span>
+            )}
             <span>&middot;</span>
             <time dateTime={caseData.created_at} title={fullTimestamp(caseData.created_at)}>
               {timeAgo(caseData.created_at)}
             </time>
-            <span>&middot;</span>
-            <span>{caseData.country}</span>
-            <span>&middot;</span>
-            <span>{terminationReasonLabel(caseData.termination_reason)}</span>
+            {!caseData.posted_as_official && (
+              <>
+                <span>&middot;</span>
+                <span>{caseData.country}</span>
+                <span>&middot;</span>
+                <span>{terminationReasonLabel(caseData.termination_reason)}</span>
+              </>
+            )}
             {caseData.category && (
               <>
                 <span>&middot;</span>
@@ -129,11 +145,13 @@ export default function CaseDetail() {
 
           <p className="text-cream-50 text-[15px] leading-relaxed whitespace-pre-wrap">{caseData.story_text}</p>
 
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-            <Fact label="Got notice / severance" value={yesNo(caseData.got_notice_or_severance)} />
-            <Fact label="Charge sheet given" value={yesNo(caseData.got_charge_sheet)} />
-            <Fact label="Formal enquiry held" value={yesNo(caseData.had_enquiry_meeting)} />
-          </div>
+          {!caseData.posted_as_official && (
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <Fact label="Got notice / severance" value={yesNo(caseData.got_notice_or_severance)} />
+              <Fact label="Charge sheet given" value={yesNo(caseData.got_charge_sheet)} />
+              <Fact label="Formal enquiry held" value={yesNo(caseData.had_enquiry_meeting)} />
+            </div>
+          )}
         </div>
 
         <h2 className="font-display text-xl text-cream-50 mt-10 mb-4">

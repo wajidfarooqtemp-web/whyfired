@@ -1,6 +1,58 @@
 import { useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
+// Official Google "G" mark, exactly as Google's own branding
+// guidelines specify for third-party "Sign in with Google" buttons.
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.617z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
+      <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" />
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" />
+    </svg>
+  );
+}
+
+// LinkedIn's mark: white "in" on their brand blue, the standard
+// treatment for a "Sign in with LinkedIn" button on a dark surface.
+function LinkedInIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <rect width="24" height="24" rx="4" fill="#ffffff" />
+      <text x="12" y="17" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="13" fill="#0A66C2">
+        in
+      </text>
+    </svg>
+  );
+}
+
+// A small line-art doodle in the same loose, single-weight brush
+// style as other white-on-brand-red illustrations in this product:
+// a door left ajar, with warm light spilling through the gap. Meant
+// to read as "there's a way through this," not literally about
+// login. The circle is drawn first so the door lines sit on top of
+// it, like light behind an opening door.
+function DoorwayIllustration() {
+  return (
+    <svg width="120" height="130" viewBox="0 0 160 180" fill="none" aria-hidden="true">
+      <circle cx="88" cy="95" r="34" fill="#c2410c" opacity="0.9" />
+      <g stroke="#fbf7f2" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M46 170 L48 26" />
+        <path d="M48 26 Q49 20 56 20 L108 24" />
+        <path d="M108 24 L104 168" />
+        <path d="M46 170 L104 168" />
+        <path d="M56 22 L94 46" />
+        <path d="M56 168 L92 146" />
+        <path d="M56 22 L56 168" />
+        <path d="M120 70 L134 66" />
+        <path d="M126 90 L142 90" />
+        <path d="M120 110 L134 116" />
+      </g>
+    </svg>
+  );
+}
+
 export default function Login() {
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/share";
@@ -27,28 +79,52 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 pt-16">
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7">
-        <h1 className="font-display text-2xl text-cream-50 mb-1">Log in</h1>
-        <p className="text-cream-100/60 text-sm mb-6">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 text-center">
+        <div className="flex justify-center mb-4">
+          <DoorwayIllustration />
+        </div>
+
+        <h1 className="font-display text-2xl text-cream-50 mb-2 leading-snug">
+          Say what happened.
+          <br />
+          Not who you are.
+        </h1>
+        <p className="text-cream-100/60 text-sm mb-7">
           Your case stays private until you choose to share it.
         </p>
 
-        <div className="space-y-2.5">
+        <div className="space-y-3 text-left">
           <button
             type="button"
             onClick={handleGoogle}
-            className="w-full rounded-lg border border-white/20 text-cream-50 text-sm py-2.5 hover:border-white/40 transition-colors"
+            className="w-full flex items-center justify-center gap-3 rounded-full bg-cream-50 text-brand-900 text-sm font-medium py-3 hover:bg-white transition-colors"
           >
+            <GoogleIcon />
             Continue with Google
           </button>
+
+          <div className="flex items-center gap-3 py-1">
+            <div className="h-px flex-1 bg-white/15" />
+            <span className="text-xs text-cream-100/40 tracking-wide">OR</span>
+            <div className="h-px flex-1 bg-white/15" />
+          </div>
+
           <button
             type="button"
             onClick={handleLinkedIn}
-            className="w-full rounded-lg border border-white/20 text-cream-50 text-sm py-2.5 hover:border-white/40 transition-colors"
+            className="w-full flex items-center justify-center gap-3 rounded-full text-sm font-medium py-3 transition-colors"
+            style={{ backgroundColor: "#0A66C2", color: "#ffffff" }}
           >
+            <LinkedInIcon />
             Continue with LinkedIn
           </button>
         </div>
+
+        <p className="text-cream-100/40 text-xs mt-6 leading-relaxed">
+          By continuing, you agree to Why Fired's{" "}
+          <a href="/terms.html" className="underline hover:text-cream-100/70">Terms</a> and{" "}
+          <a href="/privacy.html" className="underline hover:text-cream-100/70">Privacy Policy</a>.
+        </p>
       </div>
     </div>
   );
