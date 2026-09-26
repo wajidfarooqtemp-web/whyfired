@@ -33,6 +33,10 @@ export interface PreviewComment {
   body: string;
   created_at: string;
   author_name: string | null;
+  // Same concept as FeedCase.posted_as_official, one level down: an
+  // admin replying under the "Why Fired" byline instead of their own
+  // name. See migration 015.
+  posted_as_official?: boolean;
 }
 
 interface ThreadComment {
@@ -42,6 +46,7 @@ interface ThreadComment {
   edited_at: string | null;
   user_id: string;
   author: { display_name: string } | null;
+  posted_as_official: boolean;
 }
 
 const COLLAPSED_LENGTH = 280;
@@ -93,22 +98,31 @@ function CommentBubble({
   name,
   createdAt,
   edited,
+  official,
   children,
   footer,
 }: {
   name: string | null;
   createdAt: string;
   edited?: boolean;
+  official?: boolean;
   children: ReactNode;
   footer?: ReactNode;
 }) {
   return (
     <div className="flex gap-2">
-      <Avatar name={name} size={32} />
+      <Avatar name={name} size={32} official={official} />
       <div className="min-w-0 flex-1">
         <div className="rounded-lg rounded-tl-none bg-feed-bg px-3 py-2">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[13px] font-semibold text-ink truncate">{name ?? "Anonymous"}</span>
+            {official ? (
+              <span className="flex items-center gap-1 text-[13px] font-semibold text-ink truncate">
+                Why Fired
+                <VerifiedBadge size={13} />
+              </span>
+            ) : (
+              <span className="text-[13px] font-semibold text-ink truncate">{name ?? "Anonymous"}</span>
+            )}
             <span className="text-xs text-ink-soft shrink-0" title={fullTimestamp(createdAt)}>
               {timeAgo(createdAt)}
               {edited ? " \u00b7 edited" : ""}
@@ -200,7 +214,13 @@ function ThreadItem({
     ) : null;
 
   return (
-    <CommentBubble name={cm.author?.display_name ?? null} createdAt={cm.created_at} edited={!!cm.edited_at} footer={footer}>
+    <CommentBubble
+      name={cm.author?.display_name ?? null}
+      createdAt={cm.created_at}
+      edited={!!cm.edited_at}
+      official={cm.posted_as_official}
+      footer={footer}
+    >
       {editing ? (
         <div className="mt-1">
           <textarea
@@ -265,6 +285,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   const [voteError, setVoteError] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [commentAsOfficial, setCommentAsOfficial] = useState(false);
 
   const isLong = c.story_text.length > COLLAPSED_LENGTH;
   const collapsedText = c.story_text.slice(0, COLLAPSED_LENGTH).trimEnd();
@@ -307,7 +328,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   async function loadThread() {
     const { data } = await supabase
       .from("comments")
-      .select("id, body, created_at, edited_at, user_id, author:profiles(display_name)")
+      .select("id, body, created_at, edited_at, user_id, posted_as_official, author:profiles(display_name)")
       .eq("case_id", c.id)
       .eq("status", "visible")
       .order("created_at");
@@ -334,7 +355,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
 
     setPosting(true);
     const { error } = await supabase.functions.invoke("submit-comment", {
-      body: { case_id: c.id, body: text },
+      body: { case_id: c.id, body: text, post_as_official: isAdmin && commentAsOfficial },
     });
     setPosting(false);
 
@@ -346,6 +367,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
     }
 
     setCommentText("");
+    setCommentAsOfficial(false);
     await loadThread();
   }
 
@@ -383,6 +405,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   const previewBody = lastLoaded ? lastLoaded.body : preview?.body ?? null;
   const previewTime = lastLoaded ? lastLoaded.created_at : preview?.created_at ?? null;
   const previewEdited = lastLoaded ? !!lastLoaded.edited_at : false;
+  const previewOfficial = lastLoaded ? lastLoaded.posted_as_official : !!preview?.posted_as_official;
   const moreCount = Math.max(0, meta.comment_count - 1);
 
   const upActive = meta.my_vote === 1;
@@ -538,13 +561,26 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
                 />
                 {commentError && <p className="text-xs text-red-700 mt-1">{commentError}</p>}
                 {commentText.trim().length > 0 && (
-                  <button
-                    type="submit"
-                    disabled={posting}
-                    className="mt-2 rounded-full bg-brand-700 text-cream-50 text-sm font-medium px-4 py-1.5 hover:bg-brand-600 transition-colors disabled:opacity-60"
-                  >
-                    {posting ? "Posting..." : "Post"}
-                  </button>
+                  <div className="mt-2 flex items-center gap-3">
+                    <button
+                      type="submit"
+                      disabled={posting}
+                      className="rounded-full bg-brand-700 text-cream-50 text-sm font-medium px-4 py-1.5 hover:bg-brand-600 transition-colors disabled:opacity-60"
+                    >
+                      {posting ? "Posting..." : "Post"}
+                    </button>
+                    {isAdmin && (
+                      <label className="flex items-center gap-1.5 text-xs text-ink-soft cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={commentAsOfficial}
+                          onChange={(e) => setCommentAsOfficial(e.target.checked)}
+                          className="accent-brand-700"
+                        />
+                        Comment as Why Fired
+                      </label>
+                    )}
+                  </div>
                 )}
               </div>
             </form>
@@ -573,7 +609,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
           </>
         ) : previewBody && previewTime ? (
           <div className="space-y-2">
-            <CommentBubble name={previewName} createdAt={previewTime} edited={previewEdited}>
+            <CommentBubble name={previewName} createdAt={previewTime} edited={previewEdited} official={previewOfficial}>
               <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap break-words">{previewBody}</p>
             </CommentBubble>
             {moreCount > 0 && (

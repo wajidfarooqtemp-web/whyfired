@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
 import { timeAgo, fullTimestamp } from "../lib/time";
 import { VerifiedBadge } from "../components/icons";
@@ -29,6 +30,9 @@ interface CommentRow {
   body: string;
   created_at: string;
   author: { display_name: string } | null;
+  // See FeedPost.tsx / migration 015: an admin replying under the
+  // "Why Fired" byline instead of their own name.
+  posted_as_official: boolean;
 }
 
 function yesNo(v: boolean | null) {
@@ -38,12 +42,15 @@ function yesNo(v: boolean | null) {
 
 export default function CaseDetail() {
   const { id } = useParams<{ id: string }>();
+  const { profile } = useAuth();
+  const isAdmin = !!profile?.is_admin;
   const [caseData, setCaseData] = useState<CaseDetailRow | null>(null);
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commentAsOfficial, setCommentAsOfficial] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,7 +69,7 @@ export default function CaseDetail() {
         .single(),
       supabase
         .from("comments")
-        .select("id, body, created_at, author:profiles(display_name)")
+        .select("id, body, created_at, posted_as_official, author:profiles(display_name)")
         .eq("case_id", id)
         .eq("status", "visible")
         .order("created_at"),
@@ -80,7 +87,7 @@ export default function CaseDetail() {
 
     setPosting(true);
     const { error: invokeError } = await supabase.functions.invoke("submit-comment", {
-      body: { case_id: id, body: commentText.trim() },
+      body: { case_id: id, body: commentText.trim(), post_as_official: isAdmin && commentAsOfficial },
     });
     setPosting(false);
 
@@ -92,6 +99,7 @@ export default function CaseDetail() {
     }
 
     setCommentText("");
+    setCommentAsOfficial(false);
     load();
   }
 
@@ -172,20 +180,40 @@ export default function CaseDetail() {
             className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-cream-50 placeholder-cream-100/40 focus:border-white/40 outline-none"
           />
           {error && <p className="text-sm text-red-300 mt-1">{error}</p>}
-          <button
-            type="submit"
-            disabled={posting}
-            className="mt-2 rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2 hover:bg-white transition-colors disabled:opacity-60"
-          >
-            {posting ? "Posting..." : "Post comment"}
-          </button>
+          <div className="mt-2 flex items-center gap-4">
+            <button
+              type="submit"
+              disabled={posting}
+              className="rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2 hover:bg-white transition-colors disabled:opacity-60"
+            >
+              {posting ? "Posting..." : "Post comment"}
+            </button>
+            {isAdmin && (
+              <label className="flex items-center gap-1.5 text-xs text-cream-100/60 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={commentAsOfficial}
+                  onChange={(e) => setCommentAsOfficial(e.target.checked)}
+                  className="accent-cream-50"
+                />
+                Comment as Why Fired
+              </label>
+            )}
+          </div>
         </form>
 
         <div className="space-y-4">
           {comments.map((c) => (
             <div key={c.id} className="border-t border-white/10 pt-4">
               <div className="text-xs text-cream-100/50 mb-1 flex items-center gap-1.5">
-                <span>{c.author?.display_name ?? "Anonymous"}</span>
+                {c.posted_as_official ? (
+                  <span className="inline-flex items-center gap-1 text-cream-100/80 font-medium">
+                    Why Fired
+                    <VerifiedBadge size={12} />
+                  </span>
+                ) : (
+                  <span>{c.author?.display_name ?? "Anonymous"}</span>
+                )}
                 <span>&middot;</span>
                 <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
                   {timeAgo(c.created_at)}

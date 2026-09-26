@@ -17,6 +17,7 @@ interface PreviewRow {
   body: string;
   created_at: string;
   author_name: string | null;
+  posted_as_official: boolean | null;
 }
 
 // Renders a vertical feed and owns the per-post extras (scores, your
@@ -55,7 +56,13 @@ export default function FeedList({ cases }: { cases: FeedCase[] }) {
       setPreviews((prev) => {
         const next = { ...prev };
         for (const r of previewRows) {
-          next[r.case_id] = { id: r.id, body: r.body, created_at: r.created_at, author_name: r.author_name };
+          next[r.case_id] = {
+            id: r.id,
+            body: r.body,
+            created_at: r.created_at,
+            author_name: r.author_name,
+            posted_as_official: !!r.posted_as_official,
+          };
         }
         return next;
       });

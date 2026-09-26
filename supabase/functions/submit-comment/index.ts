@@ -45,23 +45,25 @@ Deno.serve(async (req) => {
       return json({ error: "Not authenticated." }, 401);
     }
 
-    // IP rate limit, on top of the existing per-user rate limit
-    // (the database trigger that already blocks "commenting too
-    // fast"). This one catches the same abuse spread across several
-    // different accounts instead of just one.
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const ipHash = await sha256Hex(ip);
-    const { data: allowed } = await supabase.rpc("check_rate_limit", {
-      p_ip_hash: ipHash,
-      p_action: "submit_comment",
-      p_max_count: 15,
-      p_window_minutes: 60,
-    });
-    if (allowed === false) {
-      return json({ error: "Too many comments from this connection. Please slow down." }, 429);
-    }
-
     const body = await req.json();
+
+    // "Comment as Why Fired": admin-only, same pattern as the
+    // "post as Why Fired" path in submit-case/index.ts. is_admin is
+    // read fresh here rather than trusted from the client, and the
+    // insert trigger (migration 015) enforces the same check again
+    // independently before the row is written.
+    let postAsOfficial = false;
+    if (body.post_as_official === true) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single();
+      if (!profileRow?.is_admin) {
+        return json({ error: "Not authorized." }, 403);
+      }
+      postAsOfficial = true;
+    }
 
     const caseId = typeof body.case_id === "string" ? body.case_id : "";
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,9 +76,30 @@ Deno.serve(async (req) => {
       return json({ error: "Comment must be between 1 and 2000 characters." }, 422);
     }
 
+    // IP rate limit, on top of the existing per-user rate limit
+    // (the database trigger that already blocks "commenting too
+    // fast"). This one catches the same abuse spread across several
+    // different accounts instead of just one. Skipped for the
+    // admin-only official path, same reasoning as submit-case: that
+    // path is already gated above, an admin replying as Why Fired
+    // isn't the abuse case this guards against.
+    if (!postAsOfficial) {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      const ipHash = await sha256Hex(ip);
+      const { data: allowed } = await supabase.rpc("check_rate_limit", {
+        p_ip_hash: ipHash,
+        p_action: "submit_comment",
+        p_max_count: 15,
+        p_window_minutes: 60,
+      });
+      if (allowed === false) {
+        return json({ error: "Too many comments from this connection. Please slow down." }, 429);
+      }
+    }
+
     const { data, error } = await supabase
       .from("comments")
-      .insert({ case_id: caseId, user_id: user.id, body: commentBody })
+      .insert({ case_id: caseId, user_id: user.id, body: commentBody, posted_as_official: postAsOfficial })
       .select("id, created_at")
       .single();
 
