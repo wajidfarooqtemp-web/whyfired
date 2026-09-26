@@ -45,7 +45,7 @@ const YES_NO = [
 ];
 
 function inputClass() {
-  return "w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-cream-50 placeholder-cream-100/40 focus:border-white/40 outline-none";
+  return "w-full rounded-lg border border-feed-line bg-feed-card px-3 py-2.5 text-sm text-ink placeholder-ink-soft/60 focus:border-brand-600 outline-none";
 }
 
 export default function ShareCase() {
@@ -145,12 +145,12 @@ export default function ShareCase() {
       <div className="min-h-screen flex items-center justify-center px-5 pt-16 pb-16">
         <div className="w-full max-w-md space-y-4">
           {assessment && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7">
-              <p className="text-xs uppercase tracking-wide text-cream-100/40 mb-2">
+            <div className="rounded-2xl border border-feed-line bg-cream-50 shadow-[0_1px_3px_rgba(61,9,6,0.08)] p-7">
+              <p className="text-xs uppercase tracking-wide text-brand-700 font-medium mb-2">
                 Your rights, in plain language
               </p>
 
-              <h2 className="font-display text-xl text-cream-50 mb-3">
+              <h2 className="font-display text-xl text-ink mb-3">
                 {assessment.headline}
               </h2>
 
@@ -158,14 +158,14 @@ export default function ShareCase() {
                 {assessment.reasons.map((reason: string, i: number) => (
                   <li
                     key={i}
-                    className="text-sm text-cream-100/75 leading-relaxed"
+                    className="text-sm text-ink-soft leading-relaxed"
                   >
                     {reason}
                   </li>
                 ))}
               </ul>
 
-              <p className="text-xs uppercase tracking-wide text-cream-100/40 mb-2">
+              <p className="text-xs uppercase tracking-wide text-brand-700 font-medium mb-2">
                 What you can do next
               </p>
 
@@ -181,24 +181,24 @@ export default function ShareCase() {
                   ) => (
                     <div
                       key={i}
-                      className="rounded-lg border border-white/10 p-3"
+                      className="rounded-lg border border-feed-line bg-feed-card p-3"
                     >
                       {step.href ? (
                         <a
                           href={step.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-cream-50 underline"
+                          className="text-sm font-medium text-ink underline"
                         >
                           {step.title}
                         </a>
                       ) : (
-                        <p className="text-sm font-medium text-cream-50">
+                        <p className="text-sm font-medium text-ink">
                           {step.title}
                         </p>
                       )}
 
-                      <p className="text-xs text-cream-100/60 mt-1">
+                      <p className="text-xs text-ink-soft mt-1">
                         {step.body}
                       </p>
                     </div>
@@ -206,18 +206,18 @@ export default function ShareCase() {
                 )}
               </div>
 
-              <p className="text-xs text-cream-100/40 leading-relaxed">
+              <p className="text-xs text-ink-soft/80 leading-relaxed">
                 {assessment.disclaimer}
               </p>
             </div>
           )}
 
-          <div className="w-full rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 text-center">
-            <h1 className="font-display text-2xl text-cream-50 mb-2">
+          <div className="w-full rounded-2xl border border-feed-line bg-cream-50 shadow-[0_1px_3px_rgba(61,9,6,0.08)] p-7 text-center">
+            <h1 className="font-display text-2xl text-ink mb-2">
               Your case is in
             </h1>
 
-            <p className="text-cream-100/60 text-sm mb-6">
+            <p className="text-ink-soft text-sm mb-6">
               It's pending review before it appears publicly. That review only
               decides whether it counts toward pattern data and shows up in
               Stories; it never blocks you from anything else on the site.
@@ -225,7 +225,7 @@ export default function ShareCase() {
 
             <button
               onClick={() => navigate("/")}
-              className="rounded-full bg-cream-50 text-brand-900 text-sm font-medium px-5 py-2.5 hover:bg-white transition-colors"
+              className="rounded-full bg-brand-700 text-cream-50 text-sm font-medium px-5 py-2.5 hover:bg-brand-600 transition-colors"
             >
               Back to home
             </button>
@@ -239,12 +239,12 @@ export default function ShareCase() {
     <div className="min-h-screen px-5 pt-24 pb-16">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-xl mx-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 space-y-5"
+        className="w-full max-w-xl mx-auto rounded-2xl border border-feed-line bg-cream-50 shadow-[0_1px_3px_rgba(61,9,6,0.08)] p-7 space-y-5"
       >
         <div>
-          <h1 className="font-display text-2xl text-cream-50 mb-1">Share your case</h1>
-          <p className="text-cream-100/60 text-sm">
-            Posting as <span className="text-cream-50">{profile?.display_name}</span>.
+          <h1 className="font-display text-2xl text-ink mb-1">Share your case</h1>
+          <p className="text-ink-soft text-sm">
+            Posting as <span className="text-ink font-medium">{profile?.display_name}</span>.
             Never mention your employer's name; stories that do get flagged for review.
           </p>
         </div>
@@ -340,12 +340,12 @@ export default function ShareCase() {
           />
         </Field>
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-full bg-cream-50 text-brand-900 text-sm font-medium py-3 hover:bg-white transition-colors disabled:opacity-60"
+          className="w-full rounded-full bg-brand-700 text-cream-50 text-sm font-medium py-3 hover:bg-brand-600 transition-colors disabled:opacity-60"
         >
           {submitting ? "Submitting..." : "Submit case"}
         </button>
@@ -367,10 +367,10 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-xs text-cream-100/70 mb-1.5">{label}</span>
+      <span className="block text-xs text-ink-soft mb-1.5">{label}</span>
       {children}
-      {hint && <span className="block text-xs text-cream-100/40 mt-1">{hint}</span>}
-      {error && <span className="block text-xs text-red-300 mt-1">{error}</span>}
+      {hint && <span className="block text-xs text-ink-soft/70 mt-1">{hint}</span>}
+      {error && <span className="block text-xs text-red-600 mt-1">{error}</span>}
     </label>
   );
 }

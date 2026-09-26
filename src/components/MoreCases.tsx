@@ -31,15 +31,10 @@ export default function MoreCases() {
   if (!session || !cases || cases.length === 0) return null;
 
   return (
-    <section id="stories" className="bg-feed-bg">
-      {/* Opaque two-colour gradients top and bottom, so the section
-          reads as one continuous surface between the dark hero above
-          and the dark Rights section below, with no washed-out band. */}
-      <div
-        aria-hidden="true"
-        className="h-24"
-        style={{ background: "linear-gradient(to bottom, var(--color-brand-950), var(--color-feed-bg))" }}
-      />
+    <section
+      id="stories"
+      className="bg-feed-bg shadow-[inset_0_16px_24px_-20px_rgba(0,0,0,0.55)]"
+    >
       <div className="max-w-[640px] mx-auto px-3 sm:px-5 py-10">
         <div className="flex items-end justify-between flex-wrap gap-3 mb-4 px-1">
           <h2 className="font-display text-2xl text-ink">Latest stories</h2>
@@ -49,11 +44,6 @@ export default function MoreCases() {
         </div>
         <FeedList cases={cases} />
       </div>
-      <div
-        aria-hidden="true"
-        className="h-24"
-        style={{ background: "linear-gradient(to bottom, var(--color-feed-bg), var(--color-brand-950))" }}
-      />
     </section>
   );
 }

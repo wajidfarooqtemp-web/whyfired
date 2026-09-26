@@ -27,49 +27,6 @@ function LinkedInIcon() {
   );
 }
 
-// The WhyFired mark, redrawn: just the figure and the podium (no
-// ring, no torch half, no wordmark), as loose brush strokes instead
-// of a solid silhouette — the same "not perfect lines" hand-drawn
-// quality as Claude's own illustration, done here with an SVG
-// filter that roughens the paths, plus real motion: the raised arm
-// gently lifts and settles, and the filter's own noise drifts
-// slowly, so the linework itself never sits perfectly still.
-function RaisedHandMark() {
-  return (
-    <svg width="120" height="130" viewBox="0 0 160 200" fill="none" aria-hidden="true">
-      <defs>
-        <filter id="wfSketch" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves={2} seed={4} result="noise">
-            <animate attributeName="baseFrequency" values="0.014;0.026;0.014" dur="6s" repeatCount="indefinite" />
-          </feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.2" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-      </defs>
-      <g filter="url(#wfSketch)" stroke="#fbf7f2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-        {/* head */}
-        <circle cx="70" cy="42" r="15" />
-        {/* torso, left and right contour, two loose strokes rather than a closed shape */}
-        <path d="M56 58 C51 72 49 88 51 104 C53 120 58 134 60 150 L61 172" />
-        <path d="M82 56 C89 66 92 80 90 96 C88 112 84 126 81 144 L80 170" />
-        {/* podium, two open tiers */}
-        <path d="M50 172 L50 183 L92 183 L94 170" />
-        <path d="M40 183 L40 196 L100 196 L104 178" />
-        {/* raised arm, animated: lifts and settles around the shoulder */}
-        <g>
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            values="-4 83 58; 9 83 58; -4 83 58"
-            dur="2.6s"
-            repeatCount="indefinite"
-          />
-          <path d="M83 58 C95 50 106 38 114 24 C116 21 119 19 122 22" />
-        </g>
-      </g>
-    </svg>
-  );
-}
-
 export default function Login() {
   const location = useLocation();
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/share";
@@ -96,17 +53,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 pt-16">
-      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-7 text-center">
-        <div className="flex justify-center mb-4">
-          <RaisedHandMark />
-        </div>
-
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm px-7 pt-9 pb-7 text-center">
         <h1 className="font-display text-2xl text-cream-50 mb-2 leading-snug">
           Say what happened.
           <br />
           Not who you are.
         </h1>
-        <p className="text-cream-100/60 text-sm mb-7">
+        <p className="text-cream-100/60 text-sm mb-8">
           Your case stays private until you choose to share it.
         </p>
 
