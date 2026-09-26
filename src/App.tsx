@@ -19,6 +19,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminPostOfficial = lazy(() => import("./pages/AdminPostOfficial"));
+const AdminFeatured = lazy(() => import("./pages/AdminFeatured"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Patterns = lazy(() => import("./pages/Patterns"));
 const HowItWorks = lazy(() => import("./pages/HowItWorks"));
@@ -99,6 +100,14 @@ function App() {
               </AdminRoute>
             }
           />
+        <Route
+          path="/admin/featured"
+          element={
+            <AdminRoute>
+              <AdminFeatured />
+            </AdminRoute>
+          }
+        />
         <Route
           path="/admin/post"
           element={

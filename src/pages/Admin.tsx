@@ -75,6 +75,9 @@ export default function Admin() {
           <Link to="/admin/post" className="text-cream-100/70 hover:text-cream-50 underline">
             Post as Why Fired
           </Link>
+          <Link to="/admin/featured" className="text-cream-100/70 hover:text-cream-50 underline">
+            Featured
+          </Link>
           <Link to="/admin/users" className="text-cream-100/70 hover:text-cream-50 underline">
             Users
           </Link>
