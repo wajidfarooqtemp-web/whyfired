@@ -102,22 +102,45 @@ Deno.serve(async (req) => {
       return json({ error: "Not authenticated." }, 401);
     }
 
-    // IP rate limit: on top of the one-active-case-per-user limit,
-    // this stops a script that spins up many different accounts to
-    // get around that. Hashed, never stored raw.
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const ipHash = await sha256Hex(ip);
-    const { data: allowed } = await supabase.rpc("check_rate_limit", {
-      p_ip_hash: ipHash,
-      p_action: "submit_case",
-      p_max_count: 5,
-      p_window_minutes: 60,
-    });
-    if (allowed === false) {
-      return json({ error: "Too many submissions from this connection. Please try again in a while." }, 429);
+    const body = await req.json();
+
+    // "Post as Why Fired": an admin-only path that skips the whole
+    // questionnaire and the pending-review queue, publishing a case
+    // immediately under the "Why Fired" byline. Checked against the
+    // database, not just trusted from the client — is_admin is read
+    // fresh here, and the insert trigger (migration 013) enforces
+    // the same check again independently before the row is written.
+    let postAsOfficial = false;
+    if (body.post_as_official === true) {
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single();
+      if (!profileRow?.is_admin) {
+        return json({ error: "Not authorized." }, 403);
+      }
+      postAsOfficial = true;
     }
 
-    const body = await req.json();
+    // IP rate limit: on top of the one-active-case-per-user limit,
+    // this stops a script that spins up many different accounts to
+    // get around that. Hashed, never stored raw. Skipped for the
+    // admin-only official path; that path is already gated above.
+    if (!postAsOfficial) {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      const ipHash = await sha256Hex(ip);
+      const { data: allowed } = await supabase.rpc("check_rate_limit", {
+        p_ip_hash: ipHash,
+        p_action: "submit_case",
+        p_max_count: 5,
+        p_window_minutes: 60,
+      });
+      if (allowed === false) {
+        return json({ error: "Too many submissions from this connection. Please try again in a while." }, 429);
+      }
+    }
+
     const errors: ValidationError[] = [];
 
     // Idempotency key: one per attempt at submitting the form, sent
@@ -140,6 +163,75 @@ Deno.serve(async (req) => {
 
     if (existing) {
       return json({ id: existing.id, status: existing.status }, 200);
+    }
+
+    // Official path: a category and a story, nothing else — none of
+    // the rest of the questionnaire means anything for an
+    // announcement, so we don't ask for it. The row still satisfies
+    // every column the table requires; the unused ones just get a
+    // placeholder value that the feed never displays for a post
+    // flagged posted_as_official (see FeedPost.tsx).
+    if (postAsOfficial) {
+      const categoryId = typeof body.category_id === "string" ? body.category_id : "";
+      const { data: categoryRow } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("id", categoryId)
+        .maybeSingle();
+      if (!categoryRow) {
+        errors.push({ field: "category_id", message: "Select a category." });
+      }
+
+      const officialStory = typeof body.story_text === "string" ? sanitizeText(body.story_text) : "";
+      const officialWords = wordCount(officialStory);
+      if (officialWords < 3) {
+        errors.push({ field: "story_text", message: "Write something first." });
+      }
+      if (officialWords > 600) {
+        errors.push({ field: "story_text", message: "Please keep it under 600 words." });
+      }
+
+      if (errors.length > 0) {
+        return json({ error: "Some fields need attention.", fields: errors }, 422);
+      }
+
+      const { data, error } = await supabase
+        .from("cases")
+        .insert({
+          user_id: user.id,
+          role_duties: "Official Why Fired update",
+          monthly_salary: null,
+          tenure_months: null,
+          country: "Not applicable",
+          employer_size: null,
+          termination_reason: "no_reason_given",
+          got_notice_or_severance: null,
+          got_charge_sheet: null,
+          had_enquiry_meeting: null,
+          story_text: officialStory,
+          category_id: categoryId,
+          posted_as_official: true,
+          status: "approved",
+          approved_at: new Date().toISOString(),
+          idempotency_key: idempotencyKey,
+        })
+        .select("id, status")
+        .single();
+
+      if (error) {
+        if (error.code === "23505") {
+          const { data: raceRow } = await supabase
+            .from("cases")
+            .select("id, status")
+            .eq("user_id", user.id)
+            .eq("idempotency_key", idempotencyKey)
+            .maybeSingle();
+          if (raceRow) return json({ id: raceRow.id, status: raceRow.status }, 200);
+        }
+        return json({ error: "Could not publish that post. Please try again." }, 500);
+      }
+
+      return json({ id: data.id, status: data.status }, 201);
     }
 
     const roleDuties = typeof body.role_duties === "string" ? sanitizeText(body.role_duties) : "";

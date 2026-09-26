@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
 import { timeAgo, fullTimestamp } from "../lib/time";
-import { ArrowUpIcon, ArrowDownIcon, CommentIcon, TrashIcon, UserIcon } from "./icons";
+import { ArrowUpIcon, ArrowDownIcon, CommentIcon, TrashIcon, UserIcon, VerifiedBadge } from "./icons";
 
 export interface FeedCase {
   id: string;
@@ -15,6 +15,11 @@ export interface FeedCase {
   got_notice_or_severance?: boolean | null;
   got_charge_sheet?: boolean | null;
   had_enquiry_meeting?: boolean | null;
+  // True only for a case an admin posted directly, already approved,
+  // bypassing the normal share-a-case flow. Changes the header below
+  // to a "Why Fired" byline instead of "Shared anonymously"; nothing
+  // else about how the card works changes.
+  posted_as_official?: boolean;
 }
 
 export interface FeedMeta {
@@ -54,7 +59,25 @@ function yesNo(v: boolean | null | undefined) {
   return v ? "Yes" : "No";
 }
 
-function Avatar({ name, size = 40 }: { name?: string | null; size?: number }) {
+function Avatar({
+  name,
+  size = 40,
+  official,
+}: {
+  name?: string | null;
+  size?: number;
+  official?: boolean;
+}) {
+  if (official) {
+    return (
+      <img
+        src="/logo-mark.png"
+        alt=""
+        className="shrink-0 rounded-full bg-brand-700 object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   const initial = name ? name.trim().charAt(0).toUpperCase() : "";
   return (
     <div
@@ -246,6 +269,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   const isLong = c.story_text.length > COLLAPSED_LENGTH;
   const collapsedText = c.story_text.slice(0, COLLAPSED_LENGTH).trimEnd();
   const showFacts =
+    !c.posted_as_official &&
     (expanded || !isLong) &&
     (c.got_notice_or_severance !== undefined ||
       c.got_charge_sheet !== undefined ||
@@ -369,11 +393,22 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
     <article className="rounded-xl border border-feed-line bg-feed-card shadow-[0_1px_3px_rgba(61,9,6,0.08)]">
       {/* Header */}
       <div className="flex gap-3 px-4 pt-4">
-        <Avatar size={48} />
+        <Avatar size={48} official={c.posted_as_official} />
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-ink">Shared anonymously</div>
+          {c.posted_as_official ? (
+            <div className="flex items-center gap-1 text-sm font-semibold text-ink">
+              Why Fired
+              <VerifiedBadge size={15} />
+            </div>
+          ) : (
+            <div className="text-sm font-semibold text-ink">Shared anonymously</div>
+          )}
           <div className="text-xs text-ink-soft leading-snug">
-            {c.country} &middot; {terminationReasonLabel(c.termination_reason)}
+            {c.posted_as_official ? (
+              "whyfired.com"
+            ) : (
+              <>{c.country} &middot; {terminationReasonLabel(c.termination_reason)}</>
+            )}
           </div>
           <div className="text-xs text-ink-soft leading-snug">
             <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>

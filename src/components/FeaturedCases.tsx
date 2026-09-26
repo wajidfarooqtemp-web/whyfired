@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
-import { UserIcon } from "./icons";
+import { UserIcon, VerifiedBadge } from "./icons";
 
 interface FeaturedCase {
   id: string;
@@ -12,6 +12,7 @@ interface FeaturedCase {
   termination_reason: string;
   story_excerpt: string;
   story_truncated: boolean;
+  posted_as_official: boolean;
   created_at: string;
 }
 
@@ -31,7 +32,7 @@ export default function FeaturedCases() {
       // site still requires an account.
       const { data } = await supabase
         .from("featured_cases_public")
-        .select("id, role_duties, country, termination_reason, story_excerpt, story_truncated, created_at");
+        .select("id, role_duties, country, termination_reason, story_excerpt, story_truncated, posted_as_official, created_at");
       if (!cancelled) setCases(data ?? []);
     }
 
@@ -63,13 +64,28 @@ export default function FeaturedCases() {
           {cases.map((c) => (
             <article key={c.id} className="rounded-xl border border-feed-line bg-feed-card shadow-[0_1px_3px_rgba(61,9,6,0.08)] p-4">
               <div className="flex gap-3">
-                <div className="shrink-0 w-12 h-12 rounded-full bg-brand-700 text-cream-50 flex items-center justify-center">
-                  <UserIcon size={26} />
-                </div>
+                {c.posted_as_official ? (
+                  <img src="/logo-mark.png" alt="" className="shrink-0 w-12 h-12 rounded-full bg-brand-700 object-cover" />
+                ) : (
+                  <div className="shrink-0 w-12 h-12 rounded-full bg-brand-700 text-cream-50 flex items-center justify-center">
+                    <UserIcon size={26} />
+                  </div>
+                )}
                 <div>
-                  <div className="text-sm font-semibold text-ink">Shared anonymously</div>
+                  {c.posted_as_official ? (
+                    <div className="flex items-center gap-1 text-sm font-semibold text-ink">
+                      Why Fired
+                      <VerifiedBadge size={15} />
+                    </div>
+                  ) : (
+                    <div className="text-sm font-semibold text-ink">Shared anonymously</div>
+                  )}
                   <div className="text-xs text-ink-soft leading-snug">
-                    {c.country} &middot; {terminationReasonLabel(c.termination_reason)}
+                    {c.posted_as_official ? (
+                      "whyfired.com"
+                    ) : (
+                      <>{c.country} &middot; {terminationReasonLabel(c.termination_reason)}</>
+                    )}
                   </div>
                 </div>
               </div>

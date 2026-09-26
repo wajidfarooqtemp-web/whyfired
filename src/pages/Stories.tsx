@@ -30,7 +30,7 @@ export default function Stories() {
     async (offset: number, replace: boolean) => {
       let query = supabase
         .from("cases")
-        .select("id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, category:categories(name)")
+        .select("id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, category:categories(name)")
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);

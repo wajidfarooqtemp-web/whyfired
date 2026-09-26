@@ -60,3 +60,29 @@ export const CommentIcon = (p: IconProps) => (
 export const TrashIcon = (p: IconProps) => (
   <Svg {...p}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></Svg>
 );
+
+// Official verified badge: a filled blue disc with a white checkmark,
+// used only next to "Why Fired" on posts an admin published directly
+// (see FeedPost's posted_as_official handling). Deliberately not a
+// stroke icon like the others above; it needs its own fixed colours
+// so it stays a badge regardless of the surrounding text colour.
+export const VerifiedBadge = ({ size = 16, className }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    className={className}
+    role="img"
+    aria-label="Verified account"
+  >
+    <circle cx="12" cy="12" r="11" fill="#1d9bf0" />
+    <path
+      d="M7.2 12.6l3.1 3.1 6.5-7"
+      fill="none"
+      stroke="#fff"
+      strokeWidth="2.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
