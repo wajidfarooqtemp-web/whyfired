@@ -3,7 +3,16 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
 import { timeAgo, fullTimestamp } from "../lib/time";
-import { ArrowUpIcon, ArrowDownIcon, CommentIcon, TrashIcon, UserIcon, VerifiedBadge } from "./icons";
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  CommentIcon,
+  TrashIcon,
+  UserIcon,
+  VerifiedBadge,
+  PinIcon,
+  StarIcon,
+} from "./icons";
 
 export interface FeedCase {
   id: string;
@@ -20,6 +29,16 @@ export interface FeedCase {
   // to a "Why Fired" byline instead of "Shared anonymously"; nothing
   // else about how the card works changes.
   posted_as_official?: boolean;
+  // Both optional and both undefined unless the caller's query select
+  // list actually asks for them. is_featured is only ever selected by
+  // the logged-in feed queries (Home, Stories) — the "Featured" badge
+  // is meant for exactly those, per how the homepage already treats
+  // logged-out visitors differently (see FeaturedCases.tsx). is_pinned
+  // is only ever selected by the Stories page, so the admin pin
+  // control below only renders there — see the `typeof ... ===
+  // "boolean"` checks, not `isAdmin` alone.
+  is_featured?: boolean;
+  is_pinned?: boolean;
 }
 
 export interface FeedMeta {
@@ -47,9 +66,16 @@ interface ThreadComment {
   user_id: string;
   author: { display_name: string } | null;
   posted_as_official: boolean;
+  // null for a top-level comment; otherwise the comment this one is
+  // replying to. Threads nest without a hard limit (migration 016) —
+  // MAX_VISUAL_DEPTH below only caps how far the indentation grows,
+  // not how deep a conversation can actually go.
+  parent_comment_id: string | null;
 }
 
 const COLLAPSED_LENGTH = 280;
+const MAX_VISUAL_DEPTH = 6;
+const REPLY_INDENT_PX = 18;
 
 // 999 -> "999", 1200 -> "1.2k", 15300 -> "15.3k"
 function formatCount(n: number): string {
@@ -62,6 +88,25 @@ function formatCount(n: number): string {
 function yesNo(v: boolean | null | undefined) {
   if (v === null || v === undefined) return "Not sure";
   return v ? "Yes" : "No";
+}
+
+// Groups a flat comment list by parent_comment_id so each node only
+// needs to look up its own children. Replies within a thread read
+// oldest-first (a conversation reads top to bottom); top-level
+// comments are sorted separately by the caller, newest-first, as
+// before.
+function buildChildrenMap(comments: ThreadComment[]): Map<string, ThreadComment[]> {
+  const map = new Map<string, ThreadComment[]>();
+  for (const cm of comments) {
+    if (!cm.parent_comment_id) continue;
+    const list = map.get(cm.parent_comment_id) ?? [];
+    list.push(cm);
+    map.set(cm.parent_comment_id, list);
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+  return map;
 }
 
 function Avatar({
@@ -136,18 +181,46 @@ function CommentBubble({
   );
 }
 
-// One comment inside an opened thread, with Edit (own comments only)
-// and Delete (own comments, or any comment for admins).
-function ThreadItem({
+interface ReplyState {
+  targetId: string | null;
+  text: string;
+  asOfficial: boolean;
+  posting: boolean;
+  error: string | null;
+}
+
+// One comment inside an opened thread, and everything nested under
+// it. Edit/Delete work the same as before (own comments only for
+// Edit; own or, for admins, any comment for Delete). Reply is new:
+// every logged-in reader can reply to any visible comment, at any
+// depth, with the same "post as Why Fired" option admins get on a
+// top-level comment.
+function CommentNode({
   cm,
-  canEdit,
-  canDelete,
+  depth,
+  childrenMap,
+  myId,
+  isAdmin,
+  reply,
+  onReplyClick,
+  onReplyTextChange,
+  onReplyOfficialChange,
+  onReplySubmit,
+  onReplyCancel,
   onSaved,
   onDeleted,
 }: {
   cm: ThreadComment;
-  canEdit: boolean;
-  canDelete: boolean;
+  depth: number;
+  childrenMap: Map<string, ThreadComment[]>;
+  myId: string | null;
+  isAdmin: boolean;
+  reply: ReplyState;
+  onReplyClick: (id: string) => void;
+  onReplyTextChange: (text: string) => void;
+  onReplyOfficialChange: (v: boolean) => void;
+  onReplySubmit: (parentId: string) => void;
+  onReplyCancel: () => void;
   onSaved: (id: string, body: string, editedAt: string) => void;
   onDeleted: () => void;
 }) {
@@ -155,6 +228,13 @@ function ThreadItem({
   const [draft, setDraft] = useState(cm.body);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const own = myId !== null && cm.user_id === myId;
+  const canEdit = own;
+  const canDelete = own || isAdmin;
+  const children = childrenMap.get(cm.id) ?? [];
+  const isReplying = reply.targetId === cm.id;
+  const indent = Math.min(depth, MAX_VISUAL_DEPTH) * REPLY_INDENT_PX;
 
   async function save() {
     const text = draft.trim();
@@ -189,73 +269,147 @@ function ThreadItem({
     onDeleted();
   }
 
-  const footer =
-    !editing && (canEdit || canDelete) ? (
-      <div className="mt-1 ml-1 flex gap-3 text-xs text-ink-soft">
-        {canEdit && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(cm.body);
-              setEditing(true);
-            }}
-            className="hover:text-brand-600 hover:underline"
-          >
-            Edit
-          </button>
-        )}
-        {canDelete && (
-          <button type="button" onClick={remove} disabled={busy} className="hover:text-brand-600 hover:underline">
-            Delete
-          </button>
-        )}
-        {error && <span className="text-red-700">{error}</span>}
-      </div>
-    ) : null;
+  const footer = !editing ? (
+    <div className="mt-1 ml-1 flex flex-wrap gap-3 text-xs text-ink-soft">
+      <button
+        type="button"
+        onClick={() => onReplyClick(cm.id)}
+        className="hover:text-brand-600 hover:underline"
+      >
+        Reply
+      </button>
+      {canEdit && (
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(cm.body);
+            setEditing(true);
+          }}
+          className="hover:text-brand-600 hover:underline"
+        >
+          Edit
+        </button>
+      )}
+      {canDelete && (
+        <button type="button" onClick={remove} disabled={busy} className="hover:text-brand-600 hover:underline">
+          Delete
+        </button>
+      )}
+      {error && <span className="text-red-700">{error}</span>}
+    </div>
+  ) : null;
 
   return (
-    <CommentBubble
-      name={cm.author?.display_name ?? null}
-      createdAt={cm.created_at}
-      edited={!!cm.edited_at}
-      official={cm.posted_as_official}
-      footer={footer}
-    >
-      {editing ? (
-        <div className="mt-1">
+    <div style={indent > 0 ? { marginLeft: indent } : undefined}>
+      <CommentBubble
+        name={cm.author?.display_name ?? null}
+        createdAt={cm.created_at}
+        edited={!!cm.edited_at}
+        official={cm.posted_as_official}
+        footer={footer}
+      >
+        {editing ? (
+          <div className="mt-1">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={2}
+              maxLength={2000}
+              className="w-full rounded-lg border border-feed-line bg-white px-3 py-2 text-sm text-ink focus:border-brand-600 outline-none resize-none"
+            />
+            {error && <p className="text-xs text-red-700 mt-1">{error}</p>}
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={save}
+                disabled={busy || draft.trim().length === 0}
+                className="rounded-full bg-brand-700 text-cream-50 text-xs font-medium px-3 py-1 hover:bg-brand-600 transition-colors disabled:opacity-60"
+              >
+                {busy ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setError(null);
+                }}
+                className="rounded-full border border-feed-line text-ink-soft text-xs px-3 py-1 hover:border-brand-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap break-words">{cm.body}</p>
+        )}
+      </CommentBubble>
+
+      {isReplying && (
+        <div className="mt-2 ml-9">
           <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            value={reply.text}
+            onChange={(e) => onReplyTextChange(e.target.value)}
+            placeholder="Write a reply..."
             rows={2}
             maxLength={2000}
+            autoFocus
             className="w-full rounded-lg border border-feed-line bg-white px-3 py-2 text-sm text-ink focus:border-brand-600 outline-none resize-none"
           />
-          {error && <p className="text-xs text-red-700 mt-1">{error}</p>}
-          <div className="mt-2 flex gap-2">
+          {reply.error && <p className="text-xs text-red-700 mt-1">{reply.error}</p>}
+          <div className="mt-2 flex items-center gap-3">
             <button
               type="button"
-              onClick={save}
-              disabled={busy || draft.trim().length === 0}
-              className="rounded-full bg-brand-700 text-cream-50 text-xs font-medium px-3 py-1 hover:bg-brand-600 transition-colors disabled:opacity-60"
+              onClick={() => onReplySubmit(cm.id)}
+              disabled={reply.posting || reply.text.trim().length === 0}
+              className="rounded-full bg-brand-700 text-cream-50 text-xs font-medium px-3 py-1.5 hover:bg-brand-600 transition-colors disabled:opacity-60"
             >
-              {busy ? "Saving..." : "Save"}
+              {reply.posting ? "Posting..." : "Reply"}
             </button>
             <button
               type="button"
-              onClick={() => {
-                setEditing(false);
-                setError(null);
-              }}
-              className="rounded-full border border-feed-line text-ink-soft text-xs px-3 py-1 hover:border-brand-600 transition-colors"
+              onClick={onReplyCancel}
+              className="rounded-full border border-feed-line text-ink-soft text-xs px-3 py-1.5 hover:border-brand-600 transition-colors"
             >
               Cancel
             </button>
+            {isAdmin && (
+              <label className="flex items-center gap-1.5 text-xs text-ink-soft cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={reply.asOfficial}
+                  onChange={(e) => onReplyOfficialChange(e.target.checked)}
+                  className="accent-brand-700"
+                />
+                Reply as Why Fired
+              </label>
+            )}
           </div>
         </div>
-      ) : (
-        <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap break-words">{cm.body}</p>
       )}
-    </CommentBubble>
+
+      {children.length > 0 && (
+        <div className="mt-3 space-y-3">
+          {children.map((child) => (
+            <CommentNode
+              key={child.id}
+              cm={child}
+              depth={depth + 1}
+              childrenMap={childrenMap}
+              myId={myId}
+              isAdmin={isAdmin}
+              reply={reply}
+              onReplyClick={onReplyClick}
+              onReplyTextChange={onReplyTextChange}
+              onReplyOfficialChange={onReplyOfficialChange}
+              onReplySubmit={onReplySubmit}
+              onReplyCancel={onReplyCancel}
+              onSaved={onSaved}
+              onDeleted={onDeleted}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -265,12 +419,16 @@ interface Props {
   preview: PreviewComment | null;
   onMeta: (id: string, patch: Partial<FeedMeta>) => void;
   onRemoved: (id: string) => void;
+  // Only ever passed by pages that also select is_pinned (Stories).
+  // See the FeedCase.is_pinned comment above for why the button below
+  // gates on the field being present at all, not just on isAdmin.
+  onPinChanged?: (id: string, pinned: boolean) => void;
 }
 
 // One post in the feed: header, text with "...more", a vote/comment
 // action bar, and a comment area with a preview and a
 // "See N more comments" link.
-export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props) {
+export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinChanged }: Props) {
   const { session, profile } = useAuth();
   const myId = session?.user.id ?? null;
   const isAdmin = !!profile?.is_admin;
@@ -284,8 +442,17 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   const [voting, setVoting] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [commentAsOfficial, setCommentAsOfficial] = useState(false);
+
+  const [reply, setReply] = useState<ReplyState>({
+    targetId: null,
+    text: "",
+    asOfficial: false,
+    posting: false,
+    error: null,
+  });
 
   const isLong = c.story_text.length > COLLAPSED_LENGTH;
   const collapsedText = c.story_text.slice(0, COLLAPSED_LENGTH).trimEnd();
@@ -328,7 +495,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   async function loadThread() {
     const { data } = await supabase
       .from("comments")
-      .select("id, body, created_at, edited_at, user_id, posted_as_official, author:profiles(display_name)")
+      .select("id, body, created_at, edited_at, user_id, posted_as_official, parent_comment_id, author:profiles(display_name)")
       .eq("case_id", c.id)
       .eq("status", "visible")
       .order("created_at");
@@ -371,6 +538,44 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
     await loadThread();
   }
 
+  // ---- replies --------------------------------------------------
+  function startReply(id: string) {
+    setReply({ targetId: id, text: "", asOfficial: false, posting: false, error: null });
+  }
+
+  function cancelReply() {
+    setReply({ targetId: null, text: "", asOfficial: false, posting: false, error: null });
+  }
+
+  async function submitReply(parentId: string) {
+    const text = reply.text.trim();
+    if (text.length === 0 || reply.posting) return;
+
+    setReply((prev) => ({ ...prev, posting: true, error: null }));
+    const { error } = await supabase.functions.invoke("submit-comment", {
+      body: {
+        case_id: c.id,
+        body: text,
+        parent_comment_id: parentId,
+        post_as_official: isAdmin && reply.asOfficial,
+      },
+    });
+
+    if (error) {
+      const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
+      const body = context?.json ? ((await context.json()) as { error?: string }) : null;
+      setReply((prev) => ({
+        ...prev,
+        posting: false,
+        error: body?.error ?? "Could not post your reply. Please try again.",
+      }));
+      return;
+    }
+
+    cancelReply();
+    await loadThread();
+  }
+
   function handleEdited(id: string, body: string, editedAt: string) {
     setThread((prev) =>
       prev ? prev.map((cm) => (cm.id === id ? { ...cm, body, edited_at: editedAt } : cm)) : prev
@@ -399,7 +604,27 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
     onRemoved(c.id);
   }
 
-  // Preview shown while the thread is closed: the newest comment.
+  // ---- admin: pin / unpin this story ----------------------------
+  // Same direct-update pattern as removeStory and AdminFeatured's
+  // Feature toggle: the database's own rules (migration 016's
+  // trigger) do the actual "only one pinned at a time" enforcement,
+  // so this can't do anything the backend wouldn't allow anyway.
+  async function togglePin() {
+    if (pinning || c.is_pinned === undefined) return;
+    setPinning(true);
+    setAdminError(null);
+    const next = !c.is_pinned;
+    const { error } = await supabase.from("cases").update({ is_pinned: next }).eq("id", c.id);
+    setPinning(false);
+    if (error) {
+      setAdminError("Could not update the pin.");
+      return;
+    }
+    onPinChanged?.(c.id, next);
+  }
+
+  // Preview shown while the thread is closed: the newest comment,
+  // whatever depth it's actually at.
   const lastLoaded = thread && thread.length > 0 ? thread[thread.length - 1] : null;
   const previewName = lastLoaded ? lastLoaded.author?.display_name ?? null : preview?.author_name ?? null;
   const previewBody = lastLoaded ? lastLoaded.body : preview?.body ?? null;
@@ -412,12 +637,17 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
   const downActive = meta.my_vote === -1;
   const scoreColor = upActive ? "text-brand-600" : downActive ? "text-slate-600" : "text-ink";
 
+  const childrenMap = thread ? buildChildrenMap(thread) : new Map<string, ThreadComment[]>();
+  const rootComments = thread
+    ? [...thread].filter((cm) => !cm.parent_comment_id).sort((a, b) => b.created_at.localeCompare(a.created_at))
+    : [];
+
   return (
     <article className="rounded-xl border border-feed-line bg-feed-card shadow-[0_1px_3px_rgba(61,9,6,0.08)]">
       {/* Header */}
       <div className="flex gap-3 px-4 pt-4">
         <Avatar size={48} official={c.posted_as_official} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {c.posted_as_official ? (
             <div className="flex items-center gap-1 text-sm font-semibold text-ink">
               Why Fired
@@ -440,6 +670,12 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
             {!c.posted_as_official && c.category ? <> &middot; {c.category.name}</> : null}
           </div>
         </div>
+        {c.is_featured && (
+          <span className="shrink-0 h-fit inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-1">
+            <StarIcon size={11} />
+            Featured
+          </span>
+        )}
       </div>
 
       {/* Story text */}
@@ -530,15 +766,30 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
         </button>
 
         {isAdmin && (
-          <button
-            type="button"
-            onClick={removeStory}
-            disabled={removing}
-            className="ml-auto flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-900/10 transition-colors disabled:opacity-60"
-          >
-            <TrashIcon size={16} />
-            {removing ? "Removing..." : "Remove"}
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            {c.is_pinned !== undefined && (
+              <button
+                type="button"
+                onClick={togglePin}
+                disabled={pinning}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60 ${
+                  c.is_pinned ? "text-brand-700 hover:bg-brand-700/10" : "text-ink-soft hover:bg-black/5"
+                }`}
+              >
+                <PinIcon size={16} filled={c.is_pinned} />
+                {pinning ? "..." : c.is_pinned ? "Pinned" : "Pin"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={removeStory}
+              disabled={removing}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-900/10 transition-colors disabled:opacity-60"
+            >
+              <TrashIcon size={16} />
+              {removing ? "Removing..." : "Remove"}
+            </button>
+          </div>
         )}
       </div>
       {voteError && <p className="px-4 pb-2 text-xs text-red-700">{voteError}</p>}
@@ -591,19 +842,24 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved }: Props)
               <p className="text-sm text-ink-soft">No comments yet. Be the first.</p>
             ) : (
               <div className="space-y-3">
-                {[...thread].reverse().map((cm) => {
-                  const own = myId !== null && cm.user_id === myId;
-                  return (
-                    <ThreadItem
-                      key={cm.id}
-                      cm={cm}
-                      canEdit={own}
-                      canDelete={own || isAdmin}
-                      onSaved={handleEdited}
-                      onDeleted={loadThread}
-                    />
-                  );
-                })}
+                {rootComments.map((cm) => (
+                  <CommentNode
+                    key={cm.id}
+                    cm={cm}
+                    depth={0}
+                    childrenMap={childrenMap}
+                    myId={myId}
+                    isAdmin={isAdmin}
+                    reply={reply}
+                    onReplyClick={startReply}
+                    onReplyTextChange={(text) => setReply((prev) => ({ ...prev, text }))}
+                    onReplyOfficialChange={(v) => setReply((prev) => ({ ...prev, asOfficial: v }))}
+                    onReplySubmit={submitReply}
+                    onReplyCancel={cancelReply}
+                    onSaved={handleEdited}
+                    onDeleted={loadThread}
+                  />
+                ))}
               </div>
             )}
           </>

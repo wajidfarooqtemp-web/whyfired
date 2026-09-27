@@ -33,6 +33,149 @@ interface CommentRow {
   // See FeedPost.tsx / migration 015: an admin replying under the
   // "Why Fired" byline instead of their own name.
   posted_as_official: boolean;
+  // See FeedPost.tsx / migration 016: null for a top-level comment,
+  // otherwise the comment this one replies to. Nesting is unlimited.
+  parent_comment_id: string | null;
+}
+
+function buildChildrenMap(comments: CommentRow[]): Map<string, CommentRow[]> {
+  const map = new Map<string, CommentRow[]>();
+  for (const c of comments) {
+    if (!c.parent_comment_id) continue;
+    const list = map.get(c.parent_comment_id) ?? [];
+    list.push(c);
+    map.set(c.parent_comment_id, list);
+  }
+  for (const list of map.values()) list.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  return map;
+}
+
+const MAX_VISUAL_DEPTH = 6;
+const REPLY_INDENT_PX = 18;
+
+interface ReplyState {
+  targetId: string | null;
+  text: string;
+  asOfficial: boolean;
+  posting: boolean;
+  error: string | null;
+}
+
+// One comment and everything nested under it. This page's comment
+// list has no Edit/Delete (it never has), but Reply works the same
+// way as the feed's version: any logged-in reader can reply at any
+// depth, and admins get the same "post as Why Fired" checkbox.
+function CommentNode({
+  c,
+  depth,
+  childrenMap,
+  isAdmin,
+  reply,
+  onReplyClick,
+  onReplyTextChange,
+  onReplyOfficialChange,
+  onReplySubmit,
+  onReplyCancel,
+}: {
+  c: CommentRow;
+  depth: number;
+  childrenMap: Map<string, CommentRow[]>;
+  isAdmin: boolean;
+  reply: ReplyState;
+  onReplyClick: (id: string) => void;
+  onReplyTextChange: (text: string) => void;
+  onReplyOfficialChange: (v: boolean) => void;
+  onReplySubmit: (parentId: string) => void;
+  onReplyCancel: () => void;
+}) {
+  const children = childrenMap.get(c.id) ?? [];
+  const isReplying = reply.targetId === c.id;
+  const indent = Math.min(depth, MAX_VISUAL_DEPTH) * REPLY_INDENT_PX;
+
+  return (
+    <div style={indent > 0 ? { marginLeft: indent } : undefined} className={depth > 0 ? "mt-4" : "border-t border-white/10 pt-4"}>
+      <div className="text-xs text-cream-100/50 mb-1 flex items-center gap-1.5">
+        {c.posted_as_official ? (
+          <span className="inline-flex items-center gap-1 text-cream-100/80 font-medium">
+            Why Fired
+            <VerifiedBadge size={12} />
+          </span>
+        ) : (
+          <span>{c.author?.display_name ?? "Anonymous"}</span>
+        )}
+        <span>&middot;</span>
+        <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
+          {timeAgo(c.created_at)}
+        </time>
+      </div>
+      <p className="text-cream-50 text-sm leading-relaxed">{c.body}</p>
+      <button
+        type="button"
+        onClick={() => onReplyClick(c.id)}
+        className="mt-1 text-xs text-cream-100/50 hover:text-cream-50 hover:underline"
+      >
+        Reply
+      </button>
+
+      {isReplying && (
+        <div className="mt-2">
+          <textarea
+            value={reply.text}
+            onChange={(e) => onReplyTextChange(e.target.value)}
+            placeholder="Write a reply"
+            rows={2}
+            autoFocus
+            className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-cream-50 placeholder-cream-100/40 focus:border-white/40 outline-none"
+          />
+          {reply.error && <p className="text-xs text-red-300 mt-1">{reply.error}</p>}
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onReplySubmit(c.id)}
+              disabled={reply.posting || reply.text.trim().length === 0}
+              className="rounded-full bg-cream-50 text-brand-900 text-xs font-medium px-3 py-1.5 hover:bg-white transition-colors disabled:opacity-60"
+            >
+              {reply.posting ? "Posting..." : "Reply"}
+            </button>
+            <button
+              type="button"
+              onClick={onReplyCancel}
+              className="rounded-full border border-white/20 text-cream-100/70 text-xs px-3 py-1.5 hover:border-white/40 transition-colors"
+            >
+              Cancel
+            </button>
+            {isAdmin && (
+              <label className="flex items-center gap-1.5 text-xs text-cream-100/60 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={reply.asOfficial}
+                  onChange={(e) => onReplyOfficialChange(e.target.checked)}
+                  className="accent-cream-50"
+                />
+                Reply as Why Fired
+              </label>
+            )}
+          </div>
+        </div>
+      )}
+
+      {children.map((child) => (
+        <CommentNode
+          key={child.id}
+          c={child}
+          depth={depth + 1}
+          childrenMap={childrenMap}
+          isAdmin={isAdmin}
+          reply={reply}
+          onReplyClick={onReplyClick}
+          onReplyTextChange={onReplyTextChange}
+          onReplyOfficialChange={onReplyOfficialChange}
+          onReplySubmit={onReplySubmit}
+          onReplyCancel={onReplyCancel}
+        />
+      ))}
+    </div>
+  );
 }
 
 function yesNo(v: boolean | null) {
@@ -51,6 +194,13 @@ export default function CaseDetail() {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentAsOfficial, setCommentAsOfficial] = useState(false);
+  const [reply, setReply] = useState<ReplyState>({
+    targetId: null,
+    text: "",
+    asOfficial: false,
+    posting: false,
+    error: null,
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -69,7 +219,7 @@ export default function CaseDetail() {
         .single(),
       supabase
         .from("comments")
-        .select("id, body, created_at, posted_as_official, author:profiles(display_name)")
+        .select("id, body, created_at, posted_as_official, parent_comment_id, author:profiles(display_name)")
         .eq("case_id", id)
         .eq("status", "visible")
         .order("created_at"),
@@ -100,6 +250,43 @@ export default function CaseDetail() {
 
     setCommentText("");
     setCommentAsOfficial(false);
+    load();
+  }
+
+  function startReply(commentId: string) {
+    setReply({ targetId: commentId, text: "", asOfficial: false, posting: false, error: null });
+  }
+
+  function cancelReply() {
+    setReply({ targetId: null, text: "", asOfficial: false, posting: false, error: null });
+  }
+
+  async function submitReply(parentId: string) {
+    const text = reply.text.trim();
+    if (text.length === 0 || reply.posting) return;
+
+    setReply((prev) => ({ ...prev, posting: true, error: null }));
+    const { error: invokeError } = await supabase.functions.invoke("submit-comment", {
+      body: {
+        case_id: id,
+        body: text,
+        parent_comment_id: parentId,
+        post_as_official: isAdmin && reply.asOfficial,
+      },
+    });
+
+    if (invokeError) {
+      const context = (invokeError as { context?: { json?: () => Promise<unknown> } }).context;
+      const body = context?.json ? ((await context.json()) as { error?: string }) : null;
+      setReply((prev) => ({
+        ...prev,
+        posting: false,
+        error: body?.error ?? "Could not post your reply. Please try again.",
+      }));
+      return;
+    }
+
+    cancelReply();
     load();
   }
 
@@ -203,25 +390,23 @@ export default function CaseDetail() {
         </form>
 
         <div className="space-y-4">
-          {comments.map((c) => (
-            <div key={c.id} className="border-t border-white/10 pt-4">
-              <div className="text-xs text-cream-100/50 mb-1 flex items-center gap-1.5">
-                {c.posted_as_official ? (
-                  <span className="inline-flex items-center gap-1 text-cream-100/80 font-medium">
-                    Why Fired
-                    <VerifiedBadge size={12} />
-                  </span>
-                ) : (
-                  <span>{c.author?.display_name ?? "Anonymous"}</span>
-                )}
-                <span>&middot;</span>
-                <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
-                  {timeAgo(c.created_at)}
-                </time>
-              </div>
-              <p className="text-cream-50 text-sm leading-relaxed">{c.body}</p>
-            </div>
-          ))}
+          {comments
+            .filter((c) => !c.parent_comment_id)
+            .map((c) => (
+              <CommentNode
+                key={c.id}
+                c={c}
+                depth={0}
+                childrenMap={buildChildrenMap(comments)}
+                isAdmin={isAdmin}
+                reply={reply}
+                onReplyClick={startReply}
+                onReplyTextChange={(text) => setReply((prev) => ({ ...prev, text }))}
+                onReplyOfficialChange={(v) => setReply((prev) => ({ ...prev, asOfficial: v }))}
+                onReplySubmit={submitReply}
+                onReplyCancel={cancelReply}
+              />
+            ))}
         </div>
       </div>
     </div>

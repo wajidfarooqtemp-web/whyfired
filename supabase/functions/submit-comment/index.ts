@@ -71,6 +71,19 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid case." }, 422);
     }
 
+    // Optional: this comment is a reply to another comment. Only
+    // format-checked here — whether it actually belongs to this case
+    // and is still visible is enforced independently by the
+    // database trigger (migration 016), same defense-in-depth
+    // pattern as everything else in this function.
+    let parentCommentId: string | null = null;
+    if (body.parent_comment_id !== undefined && body.parent_comment_id !== null) {
+      if (typeof body.parent_comment_id !== "string" || !uuidPattern.test(body.parent_comment_id)) {
+        return json({ error: "Invalid reply target." }, 422);
+      }
+      parentCommentId = body.parent_comment_id;
+    }
+
     const commentBody = typeof body.body === "string" ? sanitizeText(body.body) : "";
     if (commentBody.length < 1 || commentBody.length > 2000) {
       return json({ error: "Comment must be between 1 and 2000 characters." }, 422);
@@ -99,15 +112,25 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("comments")
-      .insert({ case_id: caseId, user_id: user.id, body: commentBody, posted_as_official: postAsOfficial })
+      .insert({
+        case_id: caseId,
+        user_id: user.id,
+        body: commentBody,
+        posted_as_official: postAsOfficial,
+        parent_comment_id: parentCommentId,
+      })
       .select("id, created_at")
       .single();
 
     if (error) {
       // The database's own rate-limit trigger raises a plain,
-      // already-friendly message; pass it straight through.
-      if (error.message?.includes("commenting too fast")) {
-        return json({ error: error.message }, 429);
+      // already-friendly message; pass it straight through. Same
+      // for the reply-target checks (migration 016's trigger).
+      if (
+        error.message?.includes("commenting too fast") ||
+        error.message?.includes("reply")
+      ) {
+        return json({ error: error.message }, error.message.includes("reply") ? 422 : 429);
       }
       return json({ error: "Could not post your comment. The case may not be approved yet." }, 400);
     }

@@ -14,6 +14,7 @@ export default function Stories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cases, setCases] = useState<FeedCase[]>([]);
+  const [pinnedCase, setPinnedCase] = useState<FeedCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -26,11 +27,32 @@ export default function Stories() {
       .then(({ data }) => setCategories(data ?? []));
   }, []);
 
+  // The pinned story (at most one, see migration 016) is fetched on
+  // its own, outside the category filter and pagination below, since
+  // it always shows first regardless of which category is active.
+  const loadPinned = useCallback(async () => {
+    const { data } = await supabase
+      .from("cases")
+      .select(
+        "id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, is_featured, is_pinned, category:categories(name)"
+      )
+      .eq("status", "approved")
+      .eq("is_pinned", true)
+      .maybeSingle();
+    setPinnedCase((data as unknown as FeedCase) ?? null);
+  }, []);
+
+  useEffect(() => {
+    loadPinned();
+  }, [loadPinned]);
+
   const loadPage = useCallback(
     async (offset: number, replace: boolean) => {
       let query = supabase
         .from("cases")
-        .select("id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, category:categories(name)")
+        .select(
+          "id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, is_featured, is_pinned, category:categories(name)"
+        )
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
@@ -59,12 +81,29 @@ export default function Stories() {
     setLoadingMore(false);
   }
 
+  // Pinning/unpinning from any card (this page's list or the pinned
+  // slot above it) needs both pieces of local state to agree on which
+  // one story is pinned, without a full reload. Re-fetching just the
+  // pinned slot is the simplest way to stay correct: it picks up
+  // whichever story the database's own single-pin trigger settled on.
+  function handlePinChanged(id: string, pinned: boolean) {
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id === id) return { ...c, is_pinned: pinned };
+        return pinned ? { ...c, is_pinned: false } : c;
+      })
+    );
+    loadPinned();
+  }
+
   const pill = (active: boolean) =>
     `rounded-full px-4 py-1.5 text-sm border transition-colors ${
       active
         ? "bg-brand-700 text-cream-50 border-brand-700"
         : "bg-feed-card border-feed-line text-ink-soft hover:border-brand-600"
     }`;
+
+  const visibleCases = cases.filter((c) => c.id !== pinnedCase?.id);
 
   return (
     <div className="min-h-screen bg-feed-bg px-3 sm:px-5 pt-24 pb-16">
@@ -95,12 +134,18 @@ export default function Stories() {
           </div>
         </div>
 
+        {pinnedCase && (
+          <div className="mb-3">
+            <FeedList cases={[pinnedCase]} onPinChanged={handlePinChanged} />
+          </div>
+        )}
+
         {loading ? (
           <p className="text-ink-soft text-sm px-1">Loading...</p>
-        ) : cases.length === 0 ? (
-          <p className="text-ink-soft text-sm px-1">No stories here yet.</p>
+        ) : visibleCases.length === 0 ? (
+          !pinnedCase && <p className="text-ink-soft text-sm px-1">No stories here yet.</p>
         ) : (
-          <FeedList cases={cases} />
+          <FeedList cases={visibleCases} onPinChanged={handlePinChanged} />
         )}
 
         {!loading && hasMore && (

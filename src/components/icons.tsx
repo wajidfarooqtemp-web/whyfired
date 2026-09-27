@@ -61,6 +61,36 @@ export const TrashIcon = (p: IconProps) => (
   <Svg {...p}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></Svg>
 );
 
+// Thumbtack, the same silhouette used for "pinned" almost everywhere
+// (Reddit, Discord, Slack) — recognisable at a glance rather than a
+// novel shape. Filled when the story is actually pinned, outline
+// otherwise, same filled/outline convention as the vote arrows.
+export const PinIcon = ({ size = 20, filled, className }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={filled ? 0 : 1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M12 17v5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+  </svg>
+);
+
+// Small solid star for the "Featured" badge — the pairing (star +
+// word) most feed/app-store UIs use for curated content.
+export const StarIcon = ({ size = 14, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d="M12 2.5l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.6l-6.1 3.4 1.5-6.8-5.2-4.7 6.9-.7z" />
+  </svg>
+);
+
 // Official verified badge: a filled blue disc with a white checkmark,
 // used only next to "Why Fired" on posts an admin published directly
 // (see FeedPost's posted_as_official handling). Deliberately not a

@@ -24,7 +24,17 @@ interface PreviewRow {
 // vote, comment counts, latest-comment previews). Those are fetched in
 // two batched calls for the whole page, not one call per post, and
 // only for posts not fetched before, so "See more" stays cheap.
-export default function FeedList({ cases }: { cases: FeedCase[] }) {
+//
+// onPinChanged is optional and only ever passed by the Stories page,
+// which is the only place that also fetches is_pinned and needs to
+// know when it changes (to move the newly-pinned story to the top).
+export default function FeedList({
+  cases,
+  onPinChanged,
+}: {
+  cases: FeedCase[];
+  onPinChanged?: (id: string, pinned: boolean) => void;
+}) {
   const [meta, setMeta] = useState<Record<string, FeedMeta>>({});
   const [previews, setPreviews] = useState<Record<string, PreviewComment>>({});
   const [removed, setRemoved] = useState<Set<string>>(new Set());
@@ -89,6 +99,7 @@ export default function FeedList({ cases }: { cases: FeedCase[] }) {
           preview={previews[c.id] ?? null}
           onMeta={handleMeta}
           onRemoved={handleRemoved}
+          onPinChanged={onPinChanged}
         />
       ))}
     </div>
