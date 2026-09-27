@@ -197,7 +197,7 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-brand-950 shadow-lg overflow-hidden">
+        <div className="fixed left-4 right-4 top-16 z-[60] rounded-xl border border-white/10 bg-brand-950 shadow-lg overflow-hidden md:absolute md:left-auto md:right-0 md:top-11 md:w-80 md:max-w-[calc(100vw-2rem)]">
           <div className="px-4 py-3 border-b border-white/10 text-sm font-medium text-cream-50">Notifications</div>
           <div className="max-h-96 overflow-y-auto">
             {items === null ? (

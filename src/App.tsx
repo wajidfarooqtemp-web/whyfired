@@ -1,3 +1,4 @@
+import ScrollToTop from "./components/ScrollToTop";
 import Footer from "./components/Footer";
 import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
@@ -35,6 +36,7 @@ function PageLoading() {
 function App() {
   return (
     <div className="bg-brand-950 min-h-screen">
+      <ScrollToTop />
       <VisitTracker />
       <Navbar />
       <Suspense fallback={<PageLoading />}>
