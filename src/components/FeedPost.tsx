@@ -11,7 +11,6 @@ import {
   UserIcon,
   VerifiedBadge,
   PinIcon,
-  StarIcon,
 } from "./icons";
 
 export interface FeedCase {
@@ -29,15 +28,10 @@ export interface FeedCase {
   // to a "Why Fired" byline instead of "Shared anonymously"; nothing
   // else about how the card works changes.
   posted_as_official?: boolean;
-  // Both optional and both undefined unless the caller's query select
-  // list actually asks for them. is_featured is only ever selected by
-  // the logged-in feed queries (Home, Stories) — the "Featured" badge
-  // is meant for exactly those, per how the homepage already treats
-  // logged-out visitors differently (see FeaturedCases.tsx). is_pinned
-  // is only ever selected by the Stories page, so the admin pin
-  // control below only renders there — see the `typeof ... ===
-  // "boolean"` checks, not `isAdmin` alone.
-  is_featured?: boolean;
+  // Only ever selected by the Stories page, so the admin pin control
+  // below only renders there — see the `!== undefined` checks, not
+  // `isAdmin` alone. The pin *indicator* above, though, shows to
+  // everyone once it's true, regardless of who's viewing.
   is_pinned?: boolean;
 }
 
@@ -670,10 +664,10 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
             {!c.posted_as_official && c.category ? <> &middot; {c.category.name}</> : null}
           </div>
         </div>
-        {c.is_featured && (
-          <span className="shrink-0 h-fit inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-1">
-            <StarIcon size={11} />
-            Featured
+        {c.is_pinned && (
+          <span className="shrink-0 h-fit inline-flex items-center gap-1 rounded-full bg-brand-700/10 text-brand-700 text-[11px] font-semibold px-2 py-1">
+            <PinIcon size={11} filled />
+            Pinned
           </span>
         )}
       </div>

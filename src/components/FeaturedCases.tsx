@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { terminationReasonLabel } from "../lib/constants";
+import { timeAgo, fullTimestamp } from "../lib/time";
 import { UserIcon, VerifiedBadge } from "./icons";
 
 interface FeaturedCase {
@@ -84,6 +85,11 @@ export default function FeaturedCases() {
                     ) : (
                       <>{c.country} &middot; {terminationReasonLabel(c.termination_reason)}</>
                     )}
+                  </div>
+                  <div className="text-xs text-ink-soft leading-snug">
+                    <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>
+                      {timeAgo(c.created_at)}
+                    </time>
                   </div>
                 </div>
               </div>

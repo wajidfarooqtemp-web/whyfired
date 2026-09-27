@@ -34,7 +34,7 @@ export default function Stories() {
     const { data } = await supabase
       .from("cases")
       .select(
-        "id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, is_featured, is_pinned, category:categories(name)"
+        "id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, is_pinned, category:categories(name)"
       )
       .eq("status", "approved")
       .eq("is_pinned", true)
@@ -51,7 +51,7 @@ export default function Stories() {
       let query = supabase
         .from("cases")
         .select(
-          "id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, is_featured, is_pinned, category:categories(name)"
+          "id, country, termination_reason, story_text, created_at, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, posted_as_official, is_pinned, category:categories(name)"
         )
         .eq("status", "approved")
         .order("created_at", { ascending: false })
