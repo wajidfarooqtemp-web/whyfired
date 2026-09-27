@@ -44,14 +44,22 @@ const TERMINATION_REASONS = [
 
 const EMPLOYER_SIZES = ["<50", "50-300", "300+", "not sure"];
 
-// Strips HTML/script-ish content and collapses runaway whitespace.
+// Strips HTML/script-ish content and collapses runaway whitespace —
+// but keeps single and double newlines, so paragraph breaks the
+// person typed in the textarea survive. (Previously this flattened
+// every run of whitespace, including newlines, into one space, which
+// is why every submitted story rendered as a single unbroken block
+// regardless of how it was formatted when written.)
 // Defense in depth: React already escapes text on render, but stored
 // text shouldn't carry markup either.
 function sanitizeText(input: string): string {
   return input
     .replace(/<[^>]*>/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/\r\n?/g, "\n") // normalize Windows/old-Mac line endings to \n
+    .replace(/[ \t]+/g, " ") // collapse runs of spaces/tabs only
+    .replace(/ *\n */g, "\n") // trim stray spaces hugging a line break
+    .replace(/\n{3,}/g, "\n\n") // cap blank-line runs at one blank line
     .trim();
 }
 

@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { timeAgo, fullTimestamp } from "../lib/time";
@@ -425,6 +426,28 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
   const { session, profile } = useAuth();
   const myId = session?.user.id ?? null;
   const isAdmin = !!profile?.is_admin;
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Voting and commenting both require a saved profile row (a display
+  // name), which a Google/LinkedIn sign-in does not create on its
+  // own — only the Onboarding page does, and nothing routes a
+  // freshly-signed-in OAuth user there automatically. Without this
+  // check, someone in that state just hits a confusing RLS/edge
+  // function error with no indication of what's actually wrong.
+  // Called first thing in every action below; sends them to set a
+  // name (or log in) and back here afterwards.
+  function requireProfile(): boolean {
+    if (!session) {
+      navigate("/login", { state: { from: location } });
+      return false;
+    }
+    if (!profile) {
+      navigate("/onboarding", { state: { from: location } });
+      return false;
+    }
+    return true;
+  }
 
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
@@ -462,6 +485,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
   // answer replaces our optimistic guess. One request at a time.
   async function castVote(next: 1 | -1) {
     if (voting) return;
+    if (!requireProfile()) return;
     const before = { my_vote: meta.my_vote, score: meta.score };
     const target = before.my_vote === next ? 0 : next;
 
@@ -512,6 +536,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
     setCommentError(null);
     const text = commentText.trim();
     if (text.length === 0 || posting) return;
+    if (!requireProfile()) return;
 
     setPosting(true);
     const { error } = await supabase.functions.invoke("submit-comment", {
@@ -543,6 +568,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
   async function submitReply(parentId: string) {
     const text = reply.text.trim();
     if (text.length === 0 || reply.posting) return;
+    if (!requireProfile()) return;
 
     setReply((prev) => ({ ...prev, posting: true, error: null }));
     const { error } = await supabase.functions.invoke("submit-comment", {

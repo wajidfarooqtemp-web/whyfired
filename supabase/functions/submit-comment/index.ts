@@ -3,11 +3,17 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
+// Keeps single and double newlines (paragraph breaks) while still
+// stripping markup, control characters, and runaway spacing — see
+// the matching function in submit-case/index.ts for the full story.
 function sanitizeText(input: string): string {
   return input
     .replace(/<[^>]*>/g, "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
