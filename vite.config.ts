@@ -48,10 +48,14 @@ export default defineConfig({
         background_color: '#2b1210',
         display: 'standalone',
         icons: [
-          // Replace these with real generated icons before shipping —
-          // placeholders so the manifest is valid immediately.
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          // purpose 'any maskable' tells Android/Chrome it's safe to
+          // crop these into a circle, squircle, or rounded square —
+          // the OS does the cropping at install time, using whatever
+          // shape that phone's launcher uses. The logo already sits
+          // well inside the safe zone (see assets/ generation notes),
+          // so it won't get clipped when that happens.
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
     }),
