@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "696405006145",
+    "project_id": "whyfired-c1b85",
+    "storage_bucket": "whyfired-c1b85.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:696405006145:android:18d35670c89d4a25f033c0",
+        "android_client_info": {
+          "package_name": "com.whyfired.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnI_pWhbpIFCyUNKlx0XAmcLi0hcgmplY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
