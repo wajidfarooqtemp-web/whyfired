@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
-import { terminationReasonLabel } from "../lib/constants";
 import { timeAgo, fullTimestamp } from "../lib/time";
 import { VerifiedBadge } from "../components/icons";
 
@@ -331,8 +330,6 @@ export default function CaseDetail() {
               <>
                 <span>&middot;</span>
                 <span>{caseData.country}</span>
-                <span>&middot;</span>
-                <span>{terminationReasonLabel(caseData.termination_reason)}</span>
               </>
             )}
             {!caseData.posted_as_official && caseData.category && (

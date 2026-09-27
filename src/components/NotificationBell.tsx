@@ -106,11 +106,12 @@ export default function NotificationBell() {
           triggerPing();
 
           if (!openRef.current) return;
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from("notifications")
             .select("id, type, is_read, created_at, case_id, actor:profiles(display_name), comment:comments(posted_as_official)")
             .eq("id", (payload.new as { id: string }).id)
             .single();
+          if (error) console.error("Failed to load new notification:", error);
           if (data) {
             const row = data as unknown as NotificationRow;
             setItems((prev) => (prev ? [row, ...prev].slice(0, LIST_LIMIT) : prev));
@@ -143,13 +144,14 @@ export default function NotificationBell() {
     setOpen(next);
     if (!next || !userId) return;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notifications")
       .select("id, type, is_read, created_at, case_id, actor:profiles(display_name), comment:comments(posted_as_official)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(LIST_LIMIT);
 
+    if (error) console.error("Failed to load notifications:", error);
     const rows = (data as unknown as NotificationRow[]) ?? [];
     setItems(rows);
 

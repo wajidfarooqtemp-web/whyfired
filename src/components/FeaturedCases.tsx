@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
-import { terminationReasonLabel } from "../lib/constants";
 import { timeAgo, fullTimestamp } from "../lib/time";
 import { UserIcon, VerifiedBadge } from "./icons";
 
@@ -80,11 +79,7 @@ export default function FeaturedCases() {
                     <div className="text-sm font-semibold text-ink">Shared anonymously</div>
                   )}
                   <div className="text-xs text-ink-soft leading-snug">
-                    {c.posted_as_official ? (
-                      "whyfired.com"
-                    ) : (
-                      <>{c.country} &middot; {terminationReasonLabel(c.termination_reason)}</>
-                    )}
+                    {c.posted_as_official ? "whyfired.com" : c.country}
                   </div>
                   <div className="text-xs text-ink-soft leading-snug">
                     <time dateTime={c.created_at} title={fullTimestamp(c.created_at)}>

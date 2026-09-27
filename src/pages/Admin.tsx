@@ -53,6 +53,7 @@ export default function Admin() {
       .from("cases")
       .update({ status: "approved", category_id: categoryId, approved_at: new Date().toISOString() })
       .eq("id", id);
+    await clearPendingReviewNotification(id);
     setBusyId(null);
     setPending((prev) => prev.filter((c) => c.id !== id));
   }
@@ -60,8 +61,22 @@ export default function Admin() {
   async function reject(id: string) {
     setBusyId(id);
     await supabase.from("cases").update({ status: "rejected" }).eq("id", id);
+    await clearPendingReviewNotification(id);
     setBusyId(null);
     setPending((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  // Approving/rejecting from here is itself "handling" the review
+  // notification for this case, same as opening it from the bell
+  // would be — without this, the badge stays on even after the case
+  // has been dealt with. RLS only lets an admin update their own
+  // notification rows, so this can never touch another admin's.
+  async function clearPendingReviewNotification(caseId: string) {
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("case_id", caseId)
+      .eq("type", "case_pending_review");
   }
 
   return (

@@ -1,36 +1,76 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { supabase } from "../lib/supabase";
 
-// Razorpay's Checkout.js attaches itself to window; there's no npm
-// package for the popup itself, just this global once the script has
-// loaded, so this narrow declaration is all TypeScript needs.
+// qrcode.js (davidshimjs, mirrored on cdnjs) attaches itself to
+// window; there's no npm package for what we use here, just this
+// global once the script has loaded.
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+    QRCode: new (
+      element: HTMLElement,
+      options: { text: string; width: number; height: number },
+    ) => void;
   }
 }
 
 const QUICK_AMOUNTS = [100, 250, 500]; // rupees
+const MIN_RUPEES = 40; // keeps every "tip" comfortably above trivial amounts
+const MAX_RUPEES = 100000; // sanity cap so a mistyped amount can't produce a broken link
 
-let razorpayScriptPromise: Promise<void> | null = null;
-function loadRazorpayScript(): Promise<void> {
-  if (razorpayScriptPromise) return razorpayScriptPromise;
-  razorpayScriptPromise = new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve();
+const UPI_ID = "wajidfarooq3@okaxis";
+const PAYEE_NAME = "WhyFired";
+
+const QR_SCRIPT_SRC = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+// SRI hash for this exact file/version — if cdnjs ever served
+// anything else at this URL, the browser refuses to run it. Re-check
+// against https://cdnjs.com/libraries/qrcodejs if this ever gets
+// upgraded to a newer version.
+const QR_SCRIPT_INTEGRITY =
+  "sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==";
+
+let qrScriptPromise: Promise<void> | null = null;
+function loadQrScript(): Promise<void> {
+  if (qrScriptPromise) return qrScriptPromise;
+  qrScriptPromise = new Promise((resolve, reject) => {
+    if (window.QRCode) return resolve();
     const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.src = QR_SCRIPT_SRC;
+    script.integrity = QR_SCRIPT_INTEGRITY;
+    script.crossOrigin = "anonymous";
+    script.referrerPolicy = "no-referrer";
     script.onload = () => resolve();
-    script.onerror = () =>
-      reject(new Error("Could not load Razorpay checkout"));
+    script.onerror = () => reject(new Error("Could not load QR code library"));
     document.body.appendChild(script);
   });
-  return razorpayScriptPromise;
+  return qrScriptPromise;
+}
+
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+// Builds a upi://pay deep link. `amountRupees` must already be
+// validated (finite, positive, within range) before this is called.
+function buildUpiLink(amountRupees: number, note: string) {
+  const params = new URLSearchParams({
+    pa: UPI_ID,
+    pn: PAYEE_NAME,
+    am: amountRupees.toFixed(2),
+    cu: "INR",
+    tn: note,
+  });
+  return `upi://pay?${params.toString()}`;
 }
 
 // Drop this in wherever the old `<a href="/#support">Support</a>` was
 // (the navbar, most likely) — it renders its own button and modal, so
 // nothing else needs to manage its open/closed state.
+//
+// This talks to nobody's backend: on mobile it hands off to whatever
+// UPI app is installed via a upi:// deep link, on desktop it shows a
+// QR code for the same link. There is no webhook or database record
+// of whether a payment actually completed — the UPI app is the only
+// source of truth for that, same as scanning any other UPI QR code.
 export default function SupportButton({
   className,
   onClick,
@@ -39,24 +79,28 @@ export default function SupportButton({
   onClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"form" | "qr" | "done">("form");
   const [amountRupees, setAmountRupees] = useState<number>(100);
   const [customAmount, setCustomAmount] = useState("");
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
+  const pendingUpiLinkRef = useRef<string>("");
+  const pendingAmountRef = useRef<number>(0);
 
   const effectiveRupees =
     customAmount !== "" ? Number(customAmount) : amountRupees;
 
   function reset() {
+    setView("form");
     setAmountRupees(100);
     setCustomAmount("");
     setName("");
     setMessage("");
     setError(null);
-    setDone(false);
+    setSubmitting(false);
   }
 
   function close() {
@@ -66,57 +110,66 @@ export default function SupportButton({
     setTimeout(reset, 200);
   }
 
+  // Renders the QR code into the container once the "qr" view is
+  // showing and the library has loaded. Re-runs are guarded by
+  // clearing the container first, in case this ever fires twice.
+  useEffect(() => {
+    if (view !== "qr" || !qrContainerRef.current) return;
+    qrContainerRef.current.innerHTML = "";
+    new window.QRCode(qrContainerRef.current, {
+      text: pendingUpiLinkRef.current,
+      width: 220,
+      height: 220,
+    });
+  }, [view]);
+
+  function validateAmount(): number | null {
+    const amt = effectiveRupees;
+    if (!Number.isFinite(amt) || amt <= 0) {
+      setError("Enter a valid amount.");
+      return null;
+    }
+    if (amt < MIN_RUPEES) {
+      setError(`Minimum support amount is ₹${MIN_RUPEES}.`);
+      return null;
+    }
+    if (amt > MAX_RUPEES) {
+      setError("That amount is too high to generate a payment link for — try something smaller.");
+      return null;
+    }
+    return amt;
+  }
+
   async function handlePay() {
     setError(null);
+    const amt = validateAmount();
+    if (amt === null) return;
 
-    if (!Number.isFinite(effectiveRupees) || effectiveRupees < 40) {
-      setError("Minimum support amount is ₹40.");
+    const note =
+      [name.trim(), message.trim()].filter(Boolean).join(" - ").slice(0, 50) ||
+      "Support WhyFired";
+    const upiLink = buildUpiLink(amt, note);
+
+    if (isMobileDevice()) {
+      // This has to stay synchronous, right here in the click
+      // handler — iOS Safari blocks app-switch redirects that happen
+      // after an `await`, so nothing async can run before this line.
+      window.location.href = upiLink;
+      setView("done");
       return;
     }
 
     setSubmitting(true);
     try {
-      await loadRazorpayScript();
-
-      const { data, error: invokeError } = await supabase.functions.invoke(
-        "create-support-order",
-        {
-          body: {
-            amount_paise: Math.round(effectiveRupees * 100),
-            name,
-            message,
-          },
-        },
-      );
-
-      if (invokeError || data?.error) {
-        setError(data?.error ?? "Could not start payment. Please try again.");
-        setSubmitting(false);
-        return;
-      }
-
-      const razorpay = new window.Razorpay({
-        key: data.key_id,
-        amount: data.amount,
-        currency: data.currency,
-        name: "Why Fired",
-        description: "Supporting Why Fired",
-        order_id: data.order_id,
-        prefill: name ? { name } : undefined,
-        theme: { color: "#7a140f" }, // brand-700
-        handler: () => {
-          // The webhook is what actually confirms and records the
-          // payment; this just tells the person it went through.
-          setDone(true);
-        },
-        modal: {
-          ondismiss: () => setSubmitting(false),
-        },
-      });
-      razorpay.open();
-      setSubmitting(false);
+      await loadQrScript();
+      pendingUpiLinkRef.current = upiLink;
+      pendingAmountRef.current = amt;
+      setView("qr");
     } catch {
-      setError("Could not start payment. Please try again.");
+      setError(
+        `Could not load the QR code. You can also pay directly to ${UPI_ID} via any UPI app.`,
+      );
+    } finally {
       setSubmitting(false);
     }
   }
@@ -147,13 +200,14 @@ export default function SupportButton({
               className="w-full max-w-sm rounded-2xl border border-feed-line bg-cream-50 shadow-[0_1px_3px_rgba(61,9,6,0.08)] p-7"
               onClick={(e) => e.stopPropagation()}
             >
-              {done ? (
+              {view === "done" ? (
                 <div className="text-center">
                   <h2 className="font-display text-xl text-ink mb-2">
                     Thank you.
                   </h2>
                   <p className="text-ink-soft text-sm mb-6">
-                    Your support helps keep Why Fired running and free to use.
+                    If your UPI app opened, finish the payment there. Your
+                    support helps keep Why Fired running and free to use.
                   </p>
                   <button
                     onClick={close}
@@ -161,6 +215,33 @@ export default function SupportButton({
                   >
                     Close
                   </button>
+                </div>
+              ) : view === "qr" ? (
+                <div className="text-center">
+                  <h2 className="font-display text-xl text-ink mb-1">
+                    Scan to pay &#8377;{pendingAmountRef.current}
+                  </h2>
+                  <p className="text-ink-soft text-sm mb-4">
+                    Open any UPI app (GPay, PhonePe, Paytm) and scan this code.
+                  </p>
+                  <div ref={qrContainerRef} className="flex justify-center mb-4" />
+                  <p className="text-xs text-ink-soft/70 mb-5">Paying to {UPI_ID}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setView("form")}
+                      className="flex-1 rounded-full border border-feed-line text-ink-soft text-sm font-medium py-2.5 hover:border-brand-600 transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={close}
+                      className="flex-1 rounded-full bg-brand-700 text-cream-50 text-sm font-medium py-2.5 hover:bg-brand-600 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -197,7 +278,7 @@ export default function SupportButton({
                     </span>
                     <input
                       type="number"
-                      min={40}
+                      min={MIN_RUPEES}
                       value={customAmount}
                       onChange={(e) => setCustomAmount(e.target.value)}
                       placeholder="e.g. 750"
@@ -250,7 +331,7 @@ export default function SupportButton({
                       className="flex-1 rounded-full bg-brand-700 text-cream-50 text-sm font-medium py-2.5 hover:bg-brand-600 transition-colors disabled:opacity-60"
                     >
                       {submitting
-                        ? "Starting..."
+                        ? "Loading..."
                         : `Pay ₹${effectiveRupees || 0}`}
                     </button>
                   </div>
