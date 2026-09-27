@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { HomeIcon, PlusSquareIcon, BookIcon, ChartIcon, ShieldIcon } from "./icons";
 import SupportButton from "./SupportButton";
+import NotificationBell from "./NotificationBell";
 
 const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy.html" },
@@ -83,6 +84,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
+            {session && <NotificationBell />}
             {session ? (
               <div className="hidden md:flex items-center gap-2">
                 <span className="text-sm text-cream-100/60">{profile?.display_name}</span>

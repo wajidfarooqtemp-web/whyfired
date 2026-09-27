@@ -91,6 +91,15 @@ export const StarIcon = ({ size = 14, className }: IconProps) => (
   </svg>
 );
 
+// Notification bell — the same silhouette LinkedIn/Instagram/every
+// other app uses, so it reads instantly rather than needing a label.
+export const BellIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </Svg>
+);
+
 // Official verified badge: a filled blue disc with a white checkmark,
 // used only next to "Why Fired" on posts an admin published directly
 // (see FeedPost's posted_as_official handling). Deliberately not a
