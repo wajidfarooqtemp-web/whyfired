@@ -5,7 +5,12 @@ import { useAuth } from "../lib/AuthContext";
 import { timeAgo } from "../lib/time";
 import { BellIcon } from "./icons";
 
-type NotificationType = "comment_on_case" | "reply_to_comment" | "case_pending_review";
+type NotificationType =
+  | "comment_on_case"
+  | "reply_to_comment"
+  | "case_pending_review"
+  | "case_upvote"
+  | "case_downvote";
 
 interface NotificationRow {
   id: string;
@@ -33,6 +38,10 @@ function messageFor(n: NotificationRow): string {
       return `${who} replied to your comment`;
     case "case_pending_review":
       return `${n.actor?.display_name ?? "Someone"} submitted a case for review`;
+    case "case_upvote":
+      return `${n.actor?.display_name ?? "Someone"} upvoted your story`;
+    case "case_downvote":
+      return `${n.actor?.display_name ?? "Someone"} downvoted your story`;
   }
 }
 

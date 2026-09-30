@@ -208,14 +208,18 @@ export default function CaseDetail() {
 
   async function load() {
     setLoading(true);
-    const [{ data: caseRow }, { data: commentRows }] = await Promise.all([
+    // maybeSingle (not single): a case genuinely not existing/visible
+    // to this viewer is an expected outcome here, not an exceptional
+    // one -- single() would throw for that same case, which is not
+    // what we want to treat as a hard error.
+    const [{ data: caseRow, error: caseError }, { data: commentRows, error: commentsError }] = await Promise.all([
       supabase
         .from("cases")
         .select(
           "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, posted_as_official, category:categories(name), author:profiles(display_name)"
         )
         .eq("id", id)
-        .single(),
+        .maybeSingle(),
       supabase
         .from("comments")
         .select("id, body, created_at, posted_as_official, parent_comment_id, author:profiles(display_name)")
@@ -223,6 +227,13 @@ export default function CaseDetail() {
         .eq("status", "visible")
         .order("created_at"),
     ]);
+
+    // Surfaced to the console rather than swallowed, so a genuine
+    // failure (as opposed to "this case just doesn't exist for you")
+    // is actually visible instead of always looking like the same
+    // generic "not available" state.
+    if (caseError) console.error("Failed to load case:", caseError);
+    if (commentsError) console.error("Failed to load comments:", commentsError);
 
     setCaseData((caseRow as unknown as CaseDetailRow) ?? null);
     setComments((commentRows as unknown as CommentRow[]) ?? []);

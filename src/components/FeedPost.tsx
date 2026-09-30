@@ -216,7 +216,7 @@ function CommentNode({
   onReplySubmit: (parentId: string) => void;
   onReplyCancel: () => void;
   onSaved: (id: string, body: string, editedAt: string) => void;
-  onDeleted: () => void;
+  onDeleted: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(cm.body);
@@ -249,18 +249,14 @@ function CommentNode({
     setEditing(false);
   }
 
-  async function remove() {
-    if (busy) return;
+  function remove() {
     if (!window.confirm("Delete this comment?")) return;
-    setBusy(true);
-    setError(null);
-    const { error: rpcError } = await supabase.rpc("delete_comment", { p_comment_id: cm.id });
-    setBusy(false);
-    if (rpcError) {
-      setError("Could not delete this comment.");
-      return;
-    }
-    onDeleted();
+    // The parent removes this comment from the screen immediately and
+    // makes the actual delete_comment call itself, so it can put the
+    // comment back if that call fails -- this component is about to
+    // unmount the instant that happens, so it can no longer show its
+    // own error state by that point.
+    onDeleted(cm.id);
   }
 
   const footer = !editing ? (
@@ -510,15 +506,49 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
 
   // ---- comments -----------------------------------------------
   async function loadThread() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("comments")
       .select("id, body, created_at, edited_at, user_id, posted_as_official, parent_comment_id, author:profiles(display_name)")
       .eq("case_id", c.id)
       .eq("status", "visible")
       .order("created_at");
+    if (error) console.error("Failed to load comments:", error);
     const rows = (data as unknown as ThreadComment[]) ?? [];
     setThread(rows);
     onMeta(c.id, { comment_count: rows.length });
+  }
+
+  // A comment always appears after its own parent in this list (both
+  // are ordered by created_at, and a reply can't exist before the
+  // comment it replies to), so one linear pass correctly catches
+  // whole reply chains, not just direct children.
+  function removeCommentSubtree(rows: ThreadComment[], id: string): ThreadComment[] {
+    const toRemove = new Set([id]);
+    for (const r of rows) {
+      if (r.parent_comment_id && toRemove.has(r.parent_comment_id)) {
+        toRemove.add(r.id);
+      }
+    }
+    return rows.filter((r) => !toRemove.has(r.id));
+  }
+
+  // Removes the comment (and any replies under it) from the screen
+  // immediately, then makes the real request in the background --
+  // same instant-feeling pattern as voting. Puts everything back and
+  // shows an error if the delete actually fails.
+  async function handleCommentDeleted(id: string) {
+    const previous = thread;
+    const next = previous ? removeCommentSubtree(previous, id) : previous;
+    setThread(next);
+    if (next) onMeta(c.id, { comment_count: next.length });
+
+    const { error } = await supabase.rpc("delete_comment", { p_comment_id: id });
+    if (error) {
+      console.error("Failed to delete comment:", error);
+      setThread(previous);
+      if (previous) onMeta(c.id, { comment_count: previous.length });
+      setCommentError("Could not delete that comment. Please try again.");
+    }
   }
 
   function openThread() {
@@ -537,22 +567,48 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
     const text = commentText.trim();
     if (text.length === 0 || posting) return;
     if (!requireProfile()) return;
+    const uid = session!.user.id;
+    const displayName = profile!.display_name;
 
+    const asOfficial = isAdmin && commentAsOfficial;
+    // A locally-made id so this placeholder can be found and removed
+    // again later (either on failure, or once the real row replaces
+    // it) -- never sent to the server, purely a local screen marker.
+    const placeholderId = `pending-${crypto.randomUUID()}`;
+    const placeholder: ThreadComment = {
+      id: placeholderId,
+      body: text,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+      user_id: uid,
+      posted_as_official: asOfficial,
+      parent_comment_id: null,
+      author: { display_name: displayName },
+    };
+
+    setThread((prev) => (prev ? [...prev, placeholder] : [placeholder]));
+    setCommentText("");
+    setCommentAsOfficial(false);
     setPosting(true);
     const { error } = await supabase.functions.invoke("submit-comment", {
-      body: { case_id: c.id, body: text, post_as_official: isAdmin && commentAsOfficial },
+      body: { case_id: c.id, body: text, post_as_official: asOfficial },
     });
     setPosting(false);
 
     if (error) {
+      // Take the placeholder back off and restore the draft so
+      // nothing typed is lost.
+      setThread((prev) => (prev ? prev.filter((cm) => cm.id !== placeholderId) : prev));
+      setCommentText(text);
+      setCommentAsOfficial(asOfficial);
       const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
       const body = context?.json ? ((await context.json()) as { error?: string }) : null;
       setCommentError(body?.error ?? "Could not post your comment. Please try again.");
       return;
     }
 
-    setCommentText("");
-    setCommentAsOfficial(false);
+    // Swaps the placeholder for the real row (real id, exact server
+    // timestamp) without a visible reload.
     await loadThread();
   }
 
@@ -569,18 +625,35 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
     const text = reply.text.trim();
     if (text.length === 0 || reply.posting) return;
     if (!requireProfile()) return;
+    const uid = session!.user.id;
+    const displayName = profile!.display_name;
 
+    const asOfficial = isAdmin && reply.asOfficial;
+    const placeholderId = `pending-${crypto.randomUUID()}`;
+    const placeholder: ThreadComment = {
+      id: placeholderId,
+      body: text,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+      user_id: uid,
+      posted_as_official: asOfficial,
+      parent_comment_id: parentId,
+      author: { display_name: displayName },
+    };
+
+    setThread((prev) => (prev ? [...prev, placeholder] : [placeholder]));
     setReply((prev) => ({ ...prev, posting: true, error: null }));
     const { error } = await supabase.functions.invoke("submit-comment", {
       body: {
         case_id: c.id,
         body: text,
         parent_comment_id: parentId,
-        post_as_official: isAdmin && reply.asOfficial,
+        post_as_official: asOfficial,
       },
     });
 
     if (error) {
+      setThread((prev) => (prev ? prev.filter((cm) => cm.id !== placeholderId) : prev));
       const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
       const body = context?.json ? ((await context.json()) as { error?: string }) : null;
       setReply((prev) => ({
@@ -872,7 +945,7 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
                     onReplySubmit={submitReply}
                     onReplyCancel={cancelReply}
                     onSaved={handleEdited}
-                    onDeleted={loadThread}
+                    onDeleted={handleCommentDeleted}
                   />
                 ))}
               </div>
