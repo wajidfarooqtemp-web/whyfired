@@ -103,7 +103,11 @@ Deno.serve(async (req) => {
     // path is already gated above, an admin replying as Why Fired
     // isn't the abuse case this guards against.
     if (!postAsOfficial) {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      // See the matching comment in submit-case/index.ts: the LAST
+      // entry in this header is the one Supabase's own edge network
+      // added, and is the only one a client can't forge themselves.
+      const forwardedFor = req.headers.get("x-forwarded-for");
+      const ip = forwardedFor?.split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "unknown";
       const ipHash = await sha256Hex(ip);
       const { data: allowed } = await supabase.rpc("check_rate_limit", {
         p_ip_hash: ipHash,

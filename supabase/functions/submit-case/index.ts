@@ -136,7 +136,15 @@ Deno.serve(async (req) => {
     // get around that. Hashed, never stored raw. Skipped for the
     // admin-only official path; that path is already gated above.
     if (!postAsOfficial) {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+      // The LAST entry, not the first: each hop a request passes
+      // through appends its own view of the client's address to the
+      // end of this header, so the rightmost value is the one added
+      // by Supabase's own edge network -- the one hop here that
+      // can't be forged by whoever sent the request. The first entry
+      // is whatever the client itself claimed, which anyone can set
+      // to anything, making it useless for rate limiting as-is.
+      const forwardedFor = req.headers.get("x-forwarded-for");
+      const ip = forwardedFor?.split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "unknown";
       const ipHash = await sha256Hex(ip);
       const { data: allowed } = await supabase.rpc("check_rate_limit", {
         p_ip_hash: ipHash,
