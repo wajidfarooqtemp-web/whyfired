@@ -216,7 +216,7 @@ export default function CaseDetail() {
       supabase
         .from("cases")
         .select(
-          "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, posted_as_official, category:categories(name), author:profiles(display_name)"
+          "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, posted_as_official, category:categories(name), author:profiles!user_id(display_name)"
         )
         .eq("id", id)
         .maybeSingle(),

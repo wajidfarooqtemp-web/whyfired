@@ -586,11 +586,15 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
       author: { display_name: displayName },
     };
 
-    setThread((prev) => (prev ? [...prev, placeholder] : [placeholder]));
+    setThread((prev) => {
+      const next = prev ? [...prev, placeholder] : [placeholder];
+      onMeta(c.id, { comment_count: next.length });
+      return next;
+    });
     setCommentText("");
     setCommentAsOfficial(false);
     setPosting(true);
-    const { error } = await supabase.functions.invoke("submit-comment", {
+    const { data, error } = await supabase.functions.invoke("submit-comment", {
       body: { case_id: c.id, body: text, post_as_official: asOfficial },
     });
     setPosting(false);
@@ -598,7 +602,11 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
     if (error) {
       // Take the placeholder back off and restore the draft so
       // nothing typed is lost.
-      setThread((prev) => (prev ? prev.filter((cm) => cm.id !== placeholderId) : prev));
+      setThread((prev) => {
+        const next = prev ? prev.filter((cm) => cm.id !== placeholderId) : prev;
+        if (next) onMeta(c.id, { comment_count: next.length });
+        return next;
+      });
       setCommentText(text);
       setCommentAsOfficial(asOfficial);
       const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
@@ -607,9 +615,25 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
       return;
     }
 
-    // Swaps the placeholder for the real row (real id, exact server
-    // timestamp) without a visible reload.
-    await loadThread();
+    // Patch the placeholder in place with the real id/timestamp we
+    // already have, rather than making a second request to re-fetch
+    // the whole thread. That second request used to be where things
+    // went wrong: if you navigated away before it finished, its
+    // result had nowhere to land, so the comment vanished from
+    // screen even though it was really saved -- a refresh "fixed" it
+    // only because a fresh load would pull it in correctly. With
+    // nothing left in flight after this, there's no gap left for
+    // that to happen in.
+    const confirmed = data as { id: string; created_at: string } | null;
+    if (confirmed) {
+      setThread((prev) =>
+        prev
+          ? prev.map((cm) =>
+              cm.id === placeholderId ? { ...cm, id: confirmed.id, created_at: confirmed.created_at } : cm
+            )
+          : prev
+      );
+    }
   }
 
   // ---- replies --------------------------------------------------
@@ -641,9 +665,13 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
       author: { display_name: displayName },
     };
 
-    setThread((prev) => (prev ? [...prev, placeholder] : [placeholder]));
+    setThread((prev) => {
+      const next = prev ? [...prev, placeholder] : [placeholder];
+      onMeta(c.id, { comment_count: next.length });
+      return next;
+    });
     setReply((prev) => ({ ...prev, posting: true, error: null }));
-    const { error } = await supabase.functions.invoke("submit-comment", {
+    const { data, error } = await supabase.functions.invoke("submit-comment", {
       body: {
         case_id: c.id,
         body: text,
@@ -653,7 +681,11 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
     });
 
     if (error) {
-      setThread((prev) => (prev ? prev.filter((cm) => cm.id !== placeholderId) : prev));
+      setThread((prev) => {
+        const next = prev ? prev.filter((cm) => cm.id !== placeholderId) : prev;
+        if (next) onMeta(c.id, { comment_count: next.length });
+        return next;
+      });
       const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
       const body = context?.json ? ((await context.json()) as { error?: string }) : null;
       setReply((prev) => ({
@@ -664,8 +696,19 @@ export default function FeedPost({ c, meta, preview, onMeta, onRemoved, onPinCha
       return;
     }
 
+    // Same in-place patch as top-level comments -- see that function
+    // for why this replaces the old "refetch after success" step.
+    const confirmed = data as { id: string; created_at: string } | null;
+    if (confirmed) {
+      setThread((prev) =>
+        prev
+          ? prev.map((cm) =>
+              cm.id === placeholderId ? { ...cm, id: confirmed.id, created_at: confirmed.created_at } : cm
+            )
+          : prev
+      );
+    }
     cancelReply();
-    await loadThread();
   }
 
   function handleEdited(id: string, body: string, editedAt: string) {
