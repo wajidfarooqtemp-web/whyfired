@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/AuthContext";
 import { timeAgo, fullTimestamp } from "../lib/time";
+import { terminationReasonLabel } from "../lib/constants";
 import { VerifiedBadge } from "../components/icons";
 
 interface CaseDetailRow {
@@ -16,12 +17,25 @@ interface CaseDetailRow {
   had_enquiry_meeting: boolean | null;
   story_text: string;
   created_at: string;
-  category: { name: string } | null;
+  category: { id: string; name: string } | null;
   author: { display_name: string } | null;
   // See FeedPost.tsx: true only for a case an admin posted directly
   // under the Why Fired byline. Suppresses the questionnaire fields
   // below, since none of them mean anything for that kind of post.
   posted_as_official: boolean;
+  // A frozen copy of exactly what the person submitted, taken once
+  // and never touched again (see approve-case). Admin-only, used to
+  // show what changed between submission and what's published now.
+  // Null for anything approved before this feature existed.
+  original_submission: Record<string, unknown> | null;
+  edited_by: string | null;
+  edited_at: string | null;
+  editor: { display_name: string } | null;
+}
+
+interface CategoryOption {
+  id: string;
+  name: string;
 }
 
 interface CommentRow {
@@ -189,6 +203,7 @@ export default function CaseDetail() {
   const [caseData, setCaseData] = useState<CaseDetailRow | null>(null);
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [commentText, setCommentText] = useState("");
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,21 +227,34 @@ export default function CaseDetail() {
     // to this viewer is an expected outcome here, not an exceptional
     // one -- single() would throw for that same case, which is not
     // what we want to treat as a hard error.
-    const [{ data: caseRow, error: caseError }, { data: commentRows, error: commentsError }] = await Promise.all([
-      supabase
-        .from("cases")
-        .select(
-          "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, posted_as_official, category:categories(name), author:profiles!user_id(display_name)"
-        )
-        .eq("id", id)
-        .maybeSingle(),
-      supabase
-        .from("comments")
-        .select("id, body, created_at, posted_as_official, parent_comment_id, author:profiles(display_name)")
-        .eq("case_id", id)
-        .eq("status", "visible")
-        .order("created_at"),
-    ]);
+    const [{ data: caseRow, error: caseError }, { data: commentRows, error: commentsError }, { data: categoryRows }] =
+      await Promise.all([
+        supabase
+          .from("cases")
+          .select(
+            // editor:profiles!edited_by and author:profiles!user_id
+            // both point at profiles, so each needs its own !column
+            // hint -- without it, PostgREST can't tell which foreign
+            // key you mean once there's more than one path to the
+            // same table (see the "case isn't available" bug from
+            // earlier for exactly what happens when that's missing).
+            "id, role_duties, country, employer_size, termination_reason, got_notice_or_severance, got_charge_sheet, had_enquiry_meeting, story_text, created_at, posted_as_official, category:categories(id, name), author:profiles!user_id(display_name), original_submission, edited_by, edited_at, editor:profiles!edited_by(display_name)"
+          )
+          .eq("id", id)
+          .maybeSingle(),
+        supabase
+          .from("comments")
+          .select("id, body, created_at, posted_as_official, parent_comment_id, author:profiles(display_name)")
+          .eq("case_id", id)
+          .eq("status", "visible")
+          .order("created_at"),
+        // Only an admin ever sees the diff section this is for, so
+        // only fetch it for an admin -- a normal reader's page load
+        // doesn't need to know every category that exists.
+        isAdmin
+          ? supabase.from("categories").select("id, name")
+          : Promise.resolve({ data: [] as CategoryOption[] }),
+      ]);
 
     // Surfaced to the console rather than swallowed, so a genuine
     // failure (as opposed to "this case just doesn't exist for you")
@@ -237,6 +265,7 @@ export default function CaseDetail() {
 
     setCaseData((caseRow as unknown as CaseDetailRow) ?? null);
     setComments((commentRows as unknown as CommentRow[]) ?? []);
+    setCategories((categoryRows as CategoryOption[]) ?? []);
     setLoading(false);
   }
 
@@ -362,6 +391,10 @@ export default function CaseDetail() {
           )}
         </div>
 
+        {isAdmin && caseData.original_submission && (
+          <EditHistoryPanel caseData={caseData} categories={categories} />
+        )}
+
         <h2 className="font-display text-xl text-cream-50 mt-10 mb-4">
           Comments {comments.length > 0 && `(${comments.length})`}
         </h2>
@@ -426,6 +459,89 @@ function Fact({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-white/10 px-3 py-2">
       <div className="text-cream-100/50">{label}</div>
       <div className="text-cream-50">{value}</div>
+    </div>
+  );
+}
+
+interface DiffRow {
+  label: string;
+  before: string;
+  after: string;
+}
+
+// Compares the frozen original_submission snapshot against what's
+// published now, field by field, and returns only the ones that
+// actually changed. "(blank)" covers a field that was empty either
+// before or after -- e.g. an admin clearing a field out entirely,
+// like redacting a name down to nothing.
+function buildDiffRows(caseData: CaseDetailRow, categories: CategoryOption[]): DiffRow[] {
+  const original = caseData.original_submission;
+  if (!original) return [];
+
+  const rows: DiffRow[] = [];
+  const add = (label: string, before: string, after: string) => {
+    if (before !== after) rows.push({ label, before: before || "(blank)", after: after || "(blank)" });
+  };
+
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  const boolLabel = (v: unknown) => yesNo(typeof v === "boolean" ? v : null);
+  const categoryName = (id: unknown) =>
+    (typeof id === "string" && categories.find((c) => c.id === id)?.name) || "";
+
+  add("Role / duties", str(original.role_duties), caseData.role_duties);
+  add("Country", str(original.country), caseData.country);
+  add("Company size", str(original.employer_size), caseData.employer_size ?? "");
+  add(
+    "Termination reason",
+    terminationReasonLabel(str(original.termination_reason)),
+    terminationReasonLabel(caseData.termination_reason)
+  );
+  add("Notice / severance?", boolLabel(original.got_notice_or_severance), yesNo(caseData.got_notice_or_severance));
+  add("Charge sheet?", boolLabel(original.got_charge_sheet), yesNo(caseData.got_charge_sheet));
+  add("Enquiry meeting?", boolLabel(original.had_enquiry_meeting), yesNo(caseData.had_enquiry_meeting));
+  add("Story", str(original.story_text), caseData.story_text);
+  add("Category", categoryName(original.category_id), caseData.category?.name ?? "");
+
+  return rows;
+}
+
+function EditHistoryPanel({
+  caseData,
+  categories,
+}: {
+  caseData: CaseDetailRow;
+  categories: CategoryOption[];
+}) {
+  const rows = buildDiffRows(caseData, categories);
+
+  return (
+    <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
+      <h3 className="text-sm font-medium text-cream-50 mb-1">Edit history</h3>
+      {caseData.edited_by ? (
+        <p className="text-xs text-cream-100/50 mb-3">
+          Last edited by {caseData.editor?.display_name ?? "an admin"}
+          {caseData.edited_at && ` on ${fullTimestamp(caseData.edited_at)}`}
+        </p>
+      ) : (
+        <p className="text-xs text-cream-100/50 mb-3">Published without changes.</p>
+      )}
+
+      {rows.length === 0 ? (
+        <p className="text-xs text-cream-100/40">No differences from the original submission.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.label} className="text-xs">
+              <div className="text-cream-100/50 mb-0.5">{r.label}</div>
+              <div className="flex flex-wrap items-start gap-1.5">
+                <span className="text-red-300/80 line-through decoration-red-300/40">{r.before}</span>
+                <span className="text-cream-100/40">&rarr;</span>
+                <span className="text-green-300/90">{r.after}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
