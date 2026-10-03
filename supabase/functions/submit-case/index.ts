@@ -7,65 +7,14 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
-
-const COUNTRIES = [
-  "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia",
-  "Austria", "Azerbaijan", "Bahrain", "Bangladesh", "Belarus", "Belgium",
-  "Bolivia", "Bosnia and Herzegovina", "Brazil", "Bulgaria", "Cambodia",
-  "Cameroon", "Canada", "Chile", "China", "Colombia", "Costa Rica",
-  "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark", "Dominican Republic",
-  "Ecuador", "Egypt", "El Salvador", "Estonia", "Ethiopia", "Fiji",
-  "Finland", "France", "Georgia", "Germany", "Ghana", "Greece",
-  "Guatemala", "Honduras", "Hong Kong", "Hungary", "Iceland", "India",
-  "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica",
-  "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Kyrgyzstan", "Laos",
-  "Latvia", "Lebanon", "Libya", "Lithuania", "Luxembourg", "Malaysia",
-  "Maldives", "Malta", "Mauritius", "Mexico", "Moldova", "Mongolia",
-  "Montenegro", "Morocco", "Myanmar", "Nepal", "Netherlands",
-  "New Zealand", "Nicaragua", "Nigeria", "North Macedonia", "Norway",
-  "Oman", "Pakistan", "Panama", "Paraguay", "Peru", "Philippines",
-  "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda",
-  "Saudi Arabia", "Serbia", "Singapore", "Slovakia", "Slovenia",
-  "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan", "Sweden",
-  "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand",
-  "Tunisia", "Turkey", "Turkmenistan", "Uganda", "Ukraine",
-  "United Arab Emirates", "United Kingdom", "United States", "Uruguay",
-  "Uzbekistan", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe",
-  "Other",
-];
-
-const TERMINATION_REASONS = [
-  "no_reason_given",
-  "misconduct_no_enquiry",
-  "misconduct_with_enquiry",
-  "layoff_retrenchment",
-  "forced_resignation",
-];
-
-const EMPLOYER_SIZES = ["<50", "50-300", "300+", "not sure"];
-
-// Strips HTML/script-ish content and collapses runaway whitespace —
-// but keeps single and double newlines, so paragraph breaks the
-// person typed in the textarea survive. (Previously this flattened
-// every run of whitespace, including newlines, into one space, which
-// is why every submitted story rendered as a single unbroken block
-// regardless of how it was formatted when written.)
-// Defense in depth: React already escapes text on render, but stored
-// text shouldn't carry markup either.
-function sanitizeText(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, "")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
-    .replace(/\r\n?/g, "\n") // normalize Windows/old-Mac line endings to \n
-    .replace(/[ \t]+/g, " ") // collapse runs of spaces/tabs only
-    .replace(/ *\n */g, "\n") // trim stray spaces hugging a line break
-    .replace(/\n{3,}/g, "\n\n") // cap blank-line runs at one blank line
-    .trim();
-}
-
-function wordCount(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length;
-}
+import {
+  COUNTRIES,
+  TERMINATION_REASONS,
+  EMPLOYER_SIZES,
+  sanitizeText,
+  wordCount,
+  type ValidationError,
+} from "../_shared/caseValidation.ts";
 
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
@@ -73,11 +22,6 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
-
-interface ValidationError {
-  field: string;
-  message: string;
 }
 
 Deno.serve(async (req) => {
